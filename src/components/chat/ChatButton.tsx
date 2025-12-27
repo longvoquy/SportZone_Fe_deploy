@@ -38,13 +38,13 @@ const ChatButton = forwardRef<ChatButtonRef>((_props, ref) => {
     if (storedToken) {
       // Connect to WebSocket with user data from sessionStorage
       webSocketService.connect();
-      
+
       // Get unread count
       dispatch(getUnreadCount());
     }
 
     return () => {
-      webSocketService.disconnect();
+      // Don't disconnect here to maintain global connection
     };
   }, [dispatch]);
 
@@ -77,7 +77,7 @@ const ChatButton = forwardRef<ChatButtonRef>((_props, ref) => {
           </>
         )}
       </button>
-      
+
       {isOpen && <ChatWindow onClose={() => setIsOpen(false)} fieldOwnerId={""} fieldId={""} fieldName={""} fieldOwnerName={""} isOpen={false} />}
     </>
   );

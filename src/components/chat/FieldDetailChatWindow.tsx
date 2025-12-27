@@ -42,7 +42,7 @@ const FieldDetailChatWindow: React.FC<FieldDetailChatWindowProps> = ({
             try {
                 if (currentRoom?._id) webSocketService.sendTyping(currentRoom._id, false);
             } catch { }
-            webSocketService.disconnect();
+            // webSocketService.disconnect(); // Don't disconnect globally
             dispatch(setCurrentRoom(null));
         }
     }, [isOpen, currentRoom?._id, dispatch]);
@@ -157,7 +157,7 @@ const FieldDetailChatWindow: React.FC<FieldDetailChatWindowProps> = ({
         const userData = sessionStorage.getItem("user");
         if (!userData) return false;
         const user = JSON.parse(userData);
-        return senderId === (user.id || user._id);
+        return senderId === user._id;
     };
 
     const formatTime = (dateString: string | Date) => {

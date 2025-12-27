@@ -52,7 +52,7 @@ const CoachDetailChatWindow: React.FC<CoachDetailChatWindowProps> = ({
             try {
                 if (currentRoom?._id) webSocketService.sendTyping(currentRoom._id, false);
             } catch { }
-            webSocketService.disconnect();
+            // webSocketService.disconnect(); // Removed to prevent global disconnection
             dispatch(setCurrentRoom(null));
             setLocalMessages([]);
             lastInitForId.current = null;
@@ -159,7 +159,7 @@ const CoachDetailChatWindow: React.FC<CoachDetailChatWindowProps> = ({
         webSocketService.sendMessageToRoom(roomId!, message.trim(), 'text');
         const user = JSON.parse(userData);
         const newMessage: Message = {
-            sender: user.id || user._id,
+            sender: user._id,
             type: 'text',
             content: message.trim(),
             isRead: false,
@@ -190,7 +190,7 @@ const CoachDetailChatWindow: React.FC<CoachDetailChatWindowProps> = ({
         const userData = sessionStorage.getItem("user");
         if (!userData) return false;
         const user = JSON.parse(userData);
-        return senderId === (user.id || user._id);
+        return senderId === user._id;
     };
 
     const formatTime = (dateString: string | Date) => {

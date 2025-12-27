@@ -10,6 +10,7 @@ export const GET_COACH_BOOKINGS_API = (coachId: string) => `${BASE_URL}/bookings
 export const GET_MY_BOOKINGS_API = `${BASE_URL}/bookings/my-bookings`;
 export const GET_MY_INVOICES_API = `${BASE_URL}/bookings/my-invoices`;
 export const GET_UPCOMING_BOOKING_API = `${BASE_URL}/bookings/upcoming`;
+export const CREATE_PAYOS_PAYMENT_API = (bookingId: string) => `${BASE_URL}/bookings/${bookingId}/payment/payos`;
 
 
 // Schedule API endpoints  

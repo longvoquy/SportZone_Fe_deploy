@@ -1,8 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type {
     Payment,
-    CreateVNPayUrlPayload,
-    CreateVNPayUrlResponse,
     UpdatePaymentStatusPayload,
     ErrorResponse,
     CreatePayOSPaymentPayload,
@@ -14,67 +12,15 @@ import type {
 import axiosPrivate from "../../utils/axios/axiosPrivate";
 import logger from "../../utils/logger";
 import {
-    CREATE_VNPAY_URL_API,
     GET_TRANSACTION_BY_BOOKING_API,
     UPDATE_TRANSACTION_STATUS_API,
-    VERIFY_VNPAY_API,
-    QUERY_VNPAY_TRANSACTION_API,
-    VNPAY_REFUND_API,
     CREATE_PAYOS_PAYMENT_API,
     PAYOS_RETURN_API,
     QUERY_PAYOS_TRANSACTION_API,
     CANCEL_PAYOS_PAYMENT_API,
 } from "./transactionsAPI";
 
-/**
- * Create VNPay payment URL
- */
-export const createVNPayUrl = createAsyncThunk<
-    CreateVNPayUrlResponse,
-    CreateVNPayUrlPayload,
-    { rejectValue: ErrorResponse }
->("transactions/createVNPayUrl", async (payload, thunkAPI) => {
-    try {
-        logger.debug("[Transactions Thunk] Creating VNPay URL:", payload);
-        const response = await axiosPrivate.get(
-            `${CREATE_VNPAY_URL_API}?amount=${payload.amount}&orderId=${payload.orderId}`
-        );
-        
-        logger.debug("[Transactions Thunk] Response:", response.data);
-        
-        // Handle different response structures
-        if (response.data?.paymentUrl) {
-            return response.data;
-        }
-        
-        if (response.data?.data?.paymentUrl) {
-            return response.data.data;
-        }
-        
-        if (response.data?.success && response.data?.data?.paymentUrl) {
-            return response.data.data;
-        }
-        
-        if (typeof response.data === 'string' && response.data.startsWith('http')) {
-            return { paymentUrl: response.data };
-        }
-        
-        logger.error("[Transactions Thunk] ❌ Cannot find paymentUrl in response", response.data);
-        throw new Error(`Backend response does not contain paymentUrl.`);
-    } catch (error: any) {
-        logger.error("[Transactions Thunk] ❌ Error creating VNPay URL:", error);
-        
-        const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || 
-                     error.response?.data?.error || 
-                     error.message || 
-                     "Failed to create VNPay URL",
-            status: error.response?.status?.toString() || "500",
-        };
-        
-        return thunkAPI.rejectWithValue(errorResponse);
-    }
-});
+
 
 /**
  * Get transaction by booking ID
@@ -121,92 +67,11 @@ export const updateTransactionStatus = createAsyncThunk<
     }
 });
 
-/**
- * Verify VNPay payment after redirect
- */
-export interface VNPayVerificationResult {
-    success: boolean;
-    paymentStatus: 'succeeded' | 'failed' | 'pending';
-    bookingId: string;
-    message: string;
-    reason?: string;
-}
 
-export const verifyVNPayPayment = createAsyncThunk<
-    VNPayVerificationResult,
-    string,
-    { rejectValue: { message: string; status: string } }
->(
-    'transactions/verifyVNPayPayment',
-    async (queryString, thunkAPI) => {
-        try {
-            const cleanQuery = queryString.startsWith('?') ? queryString.slice(1) : queryString;
-            const response = await axiosPrivate.get(`${VERIFY_VNPAY_API}?${cleanQuery}`);
-            
-            let verificationResult = response.data;
-            if (response.data?.data) {
-                verificationResult = response.data.data;
-            }
-            
-            logger.debug('[Transactions Thunk] Verification result:', verificationResult);
-            return verificationResult;
-        } catch (error: any) {
-            logger.error('[Transactions Thunk] ❌ Verification error:', error);
-            const errorResponse = {
-                message: error.response?.data?.message || error.message || 'Failed to verify payment',
-                status: error.response?.status?.toString() || '500',
-            };
-            return thunkAPI.rejectWithValue(errorResponse);
-        }
-    }
-);
 
-/**
- * Query VNPay transaction status
- */
-export const queryVNPayTransaction = createAsyncThunk<
-    any,
-    { orderId: string; transactionDate: string },
-    { rejectValue: ErrorResponse }
->("transactions/queryVNPayTransaction", async (payload, thunkAPI) => {
-    try {
-        const response = await axiosPrivate.post(QUERY_VNPAY_TRANSACTION_API, payload);
-        return response.data;
-    } catch (error: any) {
-        logger.error('[Transactions Thunk] ❌ Query error:', error);
-        return thunkAPI.rejectWithValue({
-            message: error.response?.data?.message || "Failed to query transaction",
-            status: error.response?.status?.toString() || "500",
-        });
-    }
-});
 
-/**
- * Process VNPay refund
- */
-export const processVNPayRefund = createAsyncThunk<
-    any,
-    {
-        orderId: string;
-        transactionDate: string;
-        amount: number;
-        transactionType: '02' | '03'; // 02: Full, 03: Partial
-        createdBy: string;
-        reason?: string;
-    },
-    { rejectValue: ErrorResponse }
->("transactions/processVNPayRefund", async (payload, thunkAPI) => {
-    try {
-        const response = await axiosPrivate.post(VNPAY_REFUND_API, payload);
-        return response.data;
-    } catch (error: any) {
-        logger.error('[Transactions Thunk] ❌ Refund error:', error);
-        return thunkAPI.rejectWithValue({
-            message: error.response?.data?.message || "Failed to process refund",
-            status: error.response?.status?.toString() || "500",
-        });
-    }
-});
+
+
 
 /**
  * Create PayOS payment link
@@ -220,7 +85,7 @@ export const createPayOSPayment = createAsyncThunk<
         logger.debug("[PayOS Thunk] Creating PayOS payment:", payload);
         const response = await axiosPrivate.post(CREATE_PAYOS_PAYMENT_API, payload);
         const responseData = response.data;
-        
+
         let normalized: any = responseData;
         if (responseData?.data?.checkoutUrl) {
             normalized = responseData.data;
@@ -251,12 +116,12 @@ export const createPayOSPayment = createAsyncThunk<
         return normalizedPayload;
     } catch (error: any) {
         logger.error("[PayOS Thunk] ❌ Error creating PayOS payment:", error);
-        
+
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to create PayOS payment",
             status: error.response?.status?.toString() || "500",
         };
-        
+
         return thunkAPI.rejectWithValue(errorResponse);
     }
 });
@@ -272,7 +137,7 @@ export const verifyPayOSPayment = createAsyncThunk<
     try {
         const response = await axiosPrivate.get(`${PAYOS_RETURN_API}${queryString}`);
         const responseData = response.data;
-        
+
         let normalized: any = responseData;
         if (responseData?.data?.paymentStatus) {
             normalized = responseData.data;
@@ -295,7 +160,7 @@ export const verifyPayOSPayment = createAsyncThunk<
             reference: normalized.reference ?? responseData?.reference,
             amount: normalized.amount ?? responseData?.amount ?? 0,
         };
-        
+
         logger.debug("[PayOS Thunk] ✅ Verification result:", normalizedPayload);
         return normalizedPayload;
     } catch (error: any) {
@@ -318,7 +183,7 @@ export const queryPayOSTransaction = createAsyncThunk<
     try {
         const response = await axiosPrivate.get(QUERY_PAYOS_TRANSACTION_API(orderCode));
         const responseData = response.data;
-        
+
         let normalized: any = responseData;
         if (responseData?.data?.status) {
             normalized = responseData.data;
@@ -337,7 +202,7 @@ export const queryPayOSTransaction = createAsyncThunk<
             createdAt: normalized.createdAt ?? responseData?.createdAt ?? Date.now(),
             cancelledAt: normalized.cancelledAt ?? responseData?.cancelledAt,
         };
-        
+
         logger.debug("[PayOS Thunk] ✅ Status:", normalizedPayload);
         return normalizedPayload;
     } catch (error: any) {
@@ -363,7 +228,7 @@ export const cancelPayOSPayment = createAsyncThunk<
             { cancellationReason }
         );
         const responseData = response.data;
-        
+
         let normalized: any = responseData;
         if (responseData?.data?.status) {
             normalized = responseData.data;
@@ -374,7 +239,7 @@ export const cancelPayOSPayment = createAsyncThunk<
             status: normalized.status ?? 'CANCELLED',
             message: normalized.message ?? responseData?.message ?? 'Transaction cancelled',
         };
-        
+
         logger.debug("[PayOS Thunk] ✅ Cancel result:", normalizedPayload);
         return normalizedPayload;
     } catch (error: any) {

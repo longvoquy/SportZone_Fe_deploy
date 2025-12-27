@@ -36,10 +36,19 @@ export const NavbarDarkComponent = () => {
         setIsLoggingOut(true);
         // Small delay to let the animation show
         await new Promise(resolve => setTimeout(resolve, 800));
+
+        // Ensure all local state is wiped before moving away
         clearUserAuth();
-        dispatch(logout());
-        // Force reload to ensure clean state - 1 refresh
-        window.location.href = "/";
+        sessionStorage.clear(); // Explicitly clear for non-cookie auth fallback
+
+        try {
+            await dispatch(logout()).unwrap();
+        } catch (error) {
+            console.error("Server-side logout failed:", error);
+        } finally {
+            // Force reload to ensure clean state - 1 refresh
+            window.location.href = "/";
+        }
     };
 
     const linkClass = "text-base font-medium text-gray-900 hover:text-green-600";

@@ -26,12 +26,9 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
 
     // Initialize WebSocket and fetch chat rooms
     useEffect(() => {
-        const userData = sessionStorage.getItem('user');
+        const userData = sessionStorage.getItem('user') || localStorage.getItem('user');
         if (userData) {
             const user = JSON.parse(userData);
-
-            // Connect to WebSocket
-            webSocketService.connect();
 
             // Fetch chat rooms based on roles
             const fetchRooms = async () => {
@@ -115,7 +112,7 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
             : 'bottom-6 left-6';
 
     // Don't show if not logged in
-    const userData = sessionStorage.getItem('user');
+    const userData = sessionStorage.getItem('user') || localStorage.getItem('user');
     if (!userData) return null;
 
     return (

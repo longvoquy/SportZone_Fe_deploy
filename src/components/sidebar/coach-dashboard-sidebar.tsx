@@ -18,7 +18,6 @@ import {
     Wallet,
     User,
     MessageSquare,
-    Book,
     LogOut,
     CheckSquare,
     Eye
@@ -53,11 +52,7 @@ const menuItems: MenuItem[] = [
         url: "/coach/schedule",
         icon: Calendar,
     },
-    {
-        title: "Quản lý khóa học",
-        url: "/coach/lessons",
-        icon: Book,
-    },
+
     {
         title: "Danh sách đặt chỗ",
         url: "/coach/bookings",
@@ -103,11 +98,20 @@ export function CoachSidebar() {
         setIsLoggingOut(true);
         // Small delay to let the animation show
         await new Promise(resolve => setTimeout(resolve, 800));
-        clearUserAuth()
-        dispatch(logout())
-        // Force reload to ensure clean state - 1 refresh
-        window.location.href = "/"
-    }
+
+        // Ensure all local state is wiped before moving away
+        clearUserAuth();
+        sessionStorage.clear(); // Explicitly clear for non-cookie auth fallback
+
+        try {
+            await dispatch(logout()).unwrap();
+        } catch (error) {
+            console.error("Server-side logout failed:", error);
+        } finally {
+            // Force reload to ensure clean state - 1 refresh
+            window.location.href = "/";
+        }
+    };
 
     const isActive = (path: string) => {
         if (path === "/coach/dashboard") {

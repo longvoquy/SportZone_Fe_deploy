@@ -44,7 +44,7 @@ export function NotificationBell({
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Only create socket connection if userId exists
-  const socket = useSocket(userId || "", "notifications");
+  const socket = useSocket("notifications");
 
   // Early return if no userId - don't render anything or make API calls
   if (!userId) {

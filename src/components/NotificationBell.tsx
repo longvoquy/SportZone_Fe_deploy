@@ -16,7 +16,7 @@ const readUserIdFromCookie = (): string | null => {
     if (!match) return null;
     const userStr = decodeURIComponent(match[1]);
     const user = JSON.parse(userStr);
-    return user?.id || user?._id || null;
+    return user?._id || null;
   } catch { return null; }
 };
 
@@ -48,7 +48,7 @@ export default function NotificationBell() {
 
   return (
     <div className="sz-bell-wrapper">
-      <button className="sz-bell" onClick={()=> setOpen(v=>!v)} aria-label="Notifications">
+      <button className="sz-bell" onClick={() => setOpen(v => !v)} aria-label="Notifications">
         🔔
         {unread > 0 && <span className="sz-badge">{unread}</span>}
       </button>
@@ -65,10 +65,10 @@ export default function NotificationBell() {
               <div className="sz-empty">No notifications</div>
             ) : (
               items.map(n => (
-                <div key={n._id} className={`sz-item ${n.isRead? '' : 'unread'}`}> 
+                <div key={n._id} className={`sz-item ${n.isRead ? '' : 'unread'}`}>
                   <div className="sz-title">{n.title}</div>
                   <div className="sz-msg">{n.message}</div>
-                  {!n.isRead && <button className="sz-mark" onClick={()=>markAsRead(n._id)}>Mark as read</button>}
+                  {!n.isRead && <button className="sz-mark" onClick={() => markAsRead(n._id)}>Mark as read</button>}
                   <div className="sz-time">{new Date(n.createdAt).toLocaleString()}</div>
                 </div>
               ))

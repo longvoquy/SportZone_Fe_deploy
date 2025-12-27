@@ -150,13 +150,13 @@ export default function CoachSelfDetailPage() {
     const coachId = initialCoachId || currentCoach?.id || resolvedCoachRaw?._id;
     return coachId ? state.reviews?.coachStats?.[coachId] ?? null : null;
   });
-    // Fetch coachStats on mount/coachId change
-    useEffect(() => {
-      const coachId = initialCoachId || currentCoach?.id || resolvedCoachRaw?._id;
-      if (coachId) {
-        dispatch(getCoachStatsThunk(coachId));
-      }
-    }, [dispatch, initialCoachId, currentCoach, resolvedCoachRaw]);
+  // Fetch coachStats on mount/coachId change
+  useEffect(() => {
+    const coachId = initialCoachId || currentCoach?.id || resolvedCoachRaw?._id;
+    if (coachId) {
+      dispatch(getCoachStatsThunk(coachId));
+    }
+  }, [dispatch, initialCoachId, currentCoach, resolvedCoachRaw]);
   const [activeTab, setActiveTab] = useState("bio");
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
 
@@ -201,8 +201,6 @@ export default function CoachSelfDetailPage() {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
 
-  // `lessonTypes` will be computed after `coachData` is built to ensure
-  // we use the normalized lessonTypes assigned into `coachData`.
 
   const filteredReviews = useMemo(() => {
     const base = Array.isArray(coachReviews) ? coachReviews : [];
@@ -323,7 +321,7 @@ export default function CoachSelfDetailPage() {
         else if (user?._id?.buffer) {
           const arr = Object.values(user._id.buffer) as number[];
           userId = arr.map((b) => b.toString(16).padStart(2, "0")).join("");
-        } else if (user?.id) userId = String(user.id);
+        }
       }
     } catch {
       // ignore parse errors
@@ -896,36 +894,7 @@ export default function CoachSelfDetailPage() {
   const coachData = currentCoach ? {
     ...currentCoach,
     location: normalizeLocation(currentCoach.location),
-    lessonTypes: Array.isArray(currentCoach.lessonTypes)
-      ? currentCoach.lessonTypes.map((ls: any) => {
-        const normalizeId = (val: any) => {
-          if (!val && val !== 0) return "";
-          if (typeof val === "string") return val;
-          if (typeof val === "object") {
-            if (typeof val.toString === "function") return val.toString();
-            if (val?._id) return normalizeId(val._id);
-            if (val?.$oid) return String(val.$oid);
-            if (val?.buffer) {
-              try {
-                const arr = Object.values(val.buffer) as number[];
-                return arr.map((b) => b.toString(16).padStart(2, "0")).join("");
-              } catch {
-                return JSON.stringify(val);
-              }
-            }
-            return JSON.stringify(val);
-          }
-          return String(val);
-        };
 
-        return {
-          ...ls,
-          _id: normalizeId(ls._id),
-          id: normalizeId(ls._id),
-          user: normalizeId(ls.user ?? ls.userId ?? ""),
-        };
-      })
-      : [],
   } : (resolvedCoachRaw ? {
     id: resolvedCoachRaw._id || "",
     name: resolvedCoachRaw.user?.fullName || "",
@@ -940,7 +909,7 @@ export default function CoachSelfDetailPage() {
     createdAt: resolvedCoachRaw.createdAt || "",
     memberSince: resolvedCoachRaw.createdAt || "",
     availableSlots: [],
-    lessonTypes: [],
+
     price: Number(resolvedCoachRaw.hourlyRate ?? 0),
     coachingDetails: {
       experience: resolvedCoachRaw.experience || "",

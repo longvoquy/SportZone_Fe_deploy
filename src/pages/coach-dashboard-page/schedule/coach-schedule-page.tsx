@@ -34,7 +34,7 @@ export default function CoachSchedulePage() {
         if (!storedUser) return
 
         const user = JSON.parse(storedUser)
-        const id = user._id || user.id
+        const id = user._id
         if (!id) return
 
         setUserId(id)

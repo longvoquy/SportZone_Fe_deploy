@@ -11,6 +11,7 @@ import {
     getUpcomingBooking,
     getCoachSchedule,
     setCoachHoliday,
+    createPayOSPayment,
 } from "./bookingThunk";
 
 const initialState: BookingState = {
@@ -22,10 +23,13 @@ const initialState: BookingState = {
     invoices: [],
     invoicesPagination: null,
     upcomingBooking: null,
+    paymentLink: null, // PayOS payment link response
     loadingBookings: false,
     loadingInvoices: false,
     loadingUpcoming: false,
+    loadingPayment: false, // Loading state for payment
     error: null,
+    paymentError: null, // Separate error for payment
 };
 
 const bookingSlice = createSlice({
@@ -36,19 +40,19 @@ const bookingSlice = createSlice({
         clearError: (state) => {
             state.error = null;
         },
-        
+
         // Reset booking state
         resetBookingState: (state) => {
             state.currentBooking = null;
             state.sessionBooking = null;
             state.error = null;
         },
-        
+
         // Set current booking
         setCurrentBooking: (state, action) => {
             state.currentBooking = action.payload;
         },
-        
+
         // Clear current booking
         clearCurrentBooking: (state) => {
             state.currentBooking = null;
@@ -62,7 +66,7 @@ const bookingSlice = createSlice({
                 state.currentBooking = action.payload;
                 state.bookings.push(action.payload);
             })
-            
+
 
         // Cancel Field Booking
         builder
@@ -78,7 +82,7 @@ const bookingSlice = createSlice({
                     state.currentBooking = action.payload;
                 }
             })
-            
+
 
         // Create Session Booking
         builder
@@ -89,7 +93,7 @@ const bookingSlice = createSlice({
                 state.bookings.push(action.payload.fieldBooking);
                 state.bookings.push(action.payload.coachBooking);
             })
-            
+
 
         // Cancel Session Booking
         builder
@@ -106,7 +110,7 @@ const bookingSlice = createSlice({
                     state.bookings[coachIndex] = action.payload.coachBooking;
                 }
             })
-            
+
 
         // Get Coach Bookings
         builder
@@ -114,7 +118,7 @@ const bookingSlice = createSlice({
                 state.loadingBookings = false;
                 state.bookings = action.payload;
             })
-            
+
 
         // Get My Bookings
         builder
@@ -138,7 +142,7 @@ const bookingSlice = createSlice({
                 state.loadingUpcoming = false;
                 state.upcomingBooking = action.payload || null;
             })
-            
+
 
         // Get Coach Schedule
         builder
@@ -146,7 +150,7 @@ const bookingSlice = createSlice({
                 state.loadingBookings = false;
                 state.coachSchedules = action.payload;
             })
-            
+
 
         // Set Coach Holiday
         builder
@@ -154,7 +158,24 @@ const bookingSlice = createSlice({
                 state.loadingBookings = false;
                 // Refresh coach schedules might be needed here
             })
-            
+
+        // Create PayOS Payment Link
+        builder
+            .addCase(createPayOSPayment.pending, (state) => {
+                state.loadingPayment = true;
+                state.paymentError = null;
+            })
+            .addCase(createPayOSPayment.fulfilled, (state, action) => {
+                state.loadingPayment = false;
+                state.paymentLink = action.payload;
+                state.paymentError = null;
+            })
+            .addCase(createPayOSPayment.rejected, (state, action) => {
+                state.loadingPayment = false;
+                state.paymentLink = null;
+                state.paymentError = action.payload || { message: "Không thể tạo link thanh toán", status: "500" };
+            })
+
             // Matchers: handle pending/rejected per group of thunks
             .addMatcher(
                 (action) =>

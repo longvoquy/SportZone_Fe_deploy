@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 // (removed lucide-react imports for clarity) using emoji icons below
+import logger from "@/utils/logger";
 
 // Simple emoji-based icon factory to guarantee icons match sports
 // and avoid depending on specific named exports from the icon lib.

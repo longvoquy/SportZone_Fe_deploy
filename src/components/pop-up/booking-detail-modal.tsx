@@ -45,7 +45,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ isOpen, onClose
     });
 
     // Calculate total price
-    const totalPrice = booking.totalPrice || 
+    const totalPrice = booking.totalPrice ||
         ((booking.bookingAmount || 0) + (booking.platformFee || 0));
 
     // Calculate number of hours
@@ -86,24 +86,8 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ isOpen, onClose
 
     const getPaymentMethodText = (method: number): string => {
         switch (method) {
-            case PaymentMethod.CASH:
-                return 'Tiền mặt';
-            case PaymentMethod.EBANKING:
-                return 'E-Banking';
-            case PaymentMethod.CREDIT_CARD:
-                return 'Thẻ tín dụng';
-            case PaymentMethod.DEBIT_CARD:
-                return 'Thẻ ghi nợ';
-            case PaymentMethod.MOMO:
-                return 'MoMo';
-            case PaymentMethod.ZALOPAY:
-                return 'ZaloPay';
-            case PaymentMethod.VNPAY:
-                return 'VNPay';
             case PaymentMethod.BANK_TRANSFER:
                 return 'Chuyển khoản';
-            case PaymentMethod.QR_CODE:
-                return 'QR Code';
             case PaymentMethod.INTERNAL:
                 return 'Nội bộ';
             case PaymentMethod.PAYOS:
@@ -166,7 +150,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ isOpen, onClose
                                 Thông tin chi tiết về đặt sân của bạn
                             </DialogDescription>
                         </DialogHeader>
-                        <Badge 
+                        <Badge
                             variant={getStatusBadgeVariant(booking.status)}
                             className="text-sm font-semibold"
                         >

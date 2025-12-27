@@ -29,7 +29,7 @@ const CoachVerifyPaymentsPage = lazy(() => import("../pages/coach-dashboard-page
 const CoachBookingsPage = lazy(() => import("../pages/coach-dashboard-page/bookings/coach-bookings-page.tsx"));
 const CoachSelfDetailPage = lazy(() => import("../pages/coach-dashboard-page/coach-self-detail-page/coach-profile-page"));
 const CoachProfileSettingsPage = lazy(() => import("../pages/coach-dashboard-page/profile/coach-profile-page"));
-const CoachLessonsPage = lazy(() => import("../pages/coach-dashboard-page/coach-lessons/coach-lessons-page"));
+
 const CoachChatPage = lazy(() => import("../pages/coach-dashboard-page/chat/CoachChatPage"));
 
 // Coach Discovery Pages
@@ -45,8 +45,6 @@ const FieldCreatePage = lazy(() => import("../pages/field-owner-dashboard-page/c
 const FieldDetailPage = lazy(() => import("../pages/field-detail-page/field-detail-page"));
 
 // Payment Pages
-const VNPayReturnPage = lazy(() => import("../pages/transactions/vnpay-return-page.tsx"));
-const VNPayQRPage = lazy(() => import("../pages/transactions/vnpay-qr-page.tsx"));
 const PayOSReturnPage = lazy(() => import("../pages/transactions/payos-return-page.tsx"));
 const PayOSCancelPage = lazy(() => import("../pages/transactions/payos-cancel-page.tsx"));
 
@@ -109,14 +107,6 @@ export const publicRoutes: RouteObject[] = [
   { path: "/coach-detail/:id", element: <CoachDetailPage /> },
   { path: "/auth", element: <AuthenticationPage /> },
   { path: "/unauthorized", element: <UnauthorizedPage /> },
-
-  // Transactions Pages (Public) - VNPay pages
-  // IMPORTANT: These routes must come before generic routes to avoid conflicts
-  { path: "/transactions/vnpay-qr", element: <VNPayQRPage /> },
-  { path: "/transactions/vnpay/return", element: <VNPayReturnPage /> },
-  // Legacy routes for backward compatibility
-  { path: "/payment/vnpay-qr", element: <VNPayQRPage /> },
-  { path: "/payments/vnpay/return", element: <VNPayReturnPage /> },
 
   // PayOS Payment Pages
   { path: "/transactions/payos/return", element: <PayOSReturnPage /> },
@@ -336,14 +326,7 @@ export const coachRoutes: RouteObject[] = [
     ),
   },
 
-  {
-    path: "/coach/lessons",
-    element: (
-      <ProtectedRoute allowedRoles={[UserRole.coach]}>
-        <CoachLessonsPage />
-      </ProtectedRoute>
-    ),
-  },
+
 
   {
     path: "/coach/classes",

@@ -27,7 +27,7 @@ const FieldOwnerChatDashboard: React.FC = () => {
     const dispatch = useAppDispatch();
     const fieldOwnerData = sessionStorage.getItem("user");
     const fieldOwner = fieldOwnerData ? JSON.parse(fieldOwnerData) : null;
-    const fieldOwnerId = fieldOwner?.id || fieldOwner?._id;
+    const fieldOwnerId = fieldOwner?._id;
 
     // Update the filteredRooms function
     const filteredRooms = Array.isArray(rooms)
@@ -72,8 +72,7 @@ const FieldOwnerChatDashboard: React.FC = () => {
         const userData = sessionStorage.getItem("user");
         if (!userData) return;
 
-        // const user = JSON.parse(userData);
-        // const userId = user.id || user._id;
+
 
         getFieldOwnerProfile().then(profile => {
             if (profile) {
@@ -89,7 +88,7 @@ const FieldOwnerChatDashboard: React.FC = () => {
         if (!userData) return;
 
         const user = JSON.parse(userData);
-        const userId = user.id || user._id;
+        const userId = user._id;
         if (!userId) return;
 
         // Ensure socket is connected for realtime updates

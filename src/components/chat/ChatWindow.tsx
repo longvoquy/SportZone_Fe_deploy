@@ -78,7 +78,7 @@ const FieldDetailChatWindow: React.FC<FieldDetailChatWindowProps> = ({
         // Add message locally for immediate display
         const user = JSON.parse(userData);
         const newMessage: Message = {
-            sender: user.id || user._id,
+            sender: user._id,
             type: 'text',
             content: message.trim(),
             isRead: false,
@@ -118,7 +118,7 @@ const FieldDetailChatWindow: React.FC<FieldDetailChatWindowProps> = ({
         const userData = sessionStorage.getItem("user");
         if (!userData) return false;
         const user = JSON.parse(userData);
-        return senderId === (user.id || user._id);
+        return senderId === user._id;
     };
 
     const formatTime = (dateString: string | Date) => {

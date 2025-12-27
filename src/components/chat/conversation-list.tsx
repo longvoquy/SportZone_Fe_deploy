@@ -20,7 +20,7 @@ const ConversationList: React.FC = () => {
         const userData = sessionStorage.getItem('user');
         if (!userData) return null;
         const user = JSON.parse(userData);
-        return user.id || user._id;
+        return user._id;
     };
 
     // Transform rooms to add actor information

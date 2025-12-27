@@ -17,7 +17,6 @@ export default function FieldOwnerDashboardPage() {
     const dispatch = useAppDispatch();
 
     // Redux state
-    const { user } = useAppSelector((state) => state.auth);
     const {
         fields,
         fieldOwnerBookings,
@@ -25,7 +24,7 @@ export default function FieldOwnerDashboardPage() {
         fieldOwnerBookingsError
     } = useAppSelector((state) => state.field);
 
-    const socket = useSocket(user?._id || "");
+    const socket = useSocket('notifications');
 
     useEffect(() => {
         if (!socket) return;

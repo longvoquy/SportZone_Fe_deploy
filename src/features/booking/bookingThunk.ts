@@ -31,6 +31,7 @@ import {
     GET_COACH_SCHEDULE_API,
     SET_COACH_HOLIDAY_API,
     CREATE_COMBINED_BOOKING_API,
+    CREATE_PAYOS_PAYMENT_API,
 } from "./bookingAPI";
 
 /**
@@ -482,6 +483,46 @@ export const getCoachAvailableSlots = createAsyncThunk<
         const errorResponse: ErrorResponse = {
             message: error?.message || "Failed to get coach available slots",
             status: error?.response?.status?.toString() || "500",
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+/**
+ * Create PayOS payment link for existing booking
+ * Returns checkout URL to redirect user for payment
+ */
+export const createPayOSPayment = createAsyncThunk<
+    { checkoutUrl: string; paymentLinkId: string; orderCode: number },
+    string, // bookingId
+    { rejectValue: ErrorResponse }
+>("booking/createPayOSPayment", async (bookingId, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.post(CREATE_PAYOS_PAYMENT_API(bookingId));
+
+        // Debug: Log the actual response structure
+        logger.debug('PayOS Response:', response);
+        logger.debug('PayOS Response.data:', response.data);
+
+        // Backend returns: { checkoutUrl, paymentLinkId, orderCode }
+        // But check if it's wrapped in a 'data' field
+        const paymentData = response.data?.data || response.data;
+
+        if (!paymentData.checkoutUrl) {
+            logger.error('PayOS Response missing checkoutUrl:', paymentData);
+            throw new Error('Không nhận được link thanh toán từ server');
+        }
+
+        return {
+            checkoutUrl: paymentData.checkoutUrl,
+            paymentLinkId: paymentData.paymentLinkId,
+            orderCode: paymentData.orderCode,
+        };
+    } catch (error: any) {
+        logger.error("Error creating PayOS payment:", error);
+        const errorResponse: ErrorResponse = {
+            message: error.response?.data?.message || error.message || "Không thể tạo link thanh toán PayOS",
+            status: error.response?.status?.toString() || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);
     }

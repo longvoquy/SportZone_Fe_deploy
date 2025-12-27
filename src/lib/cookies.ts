@@ -3,6 +3,8 @@
  * Replaces js-cookie dependency for better consistency
  */
 import logger from '@/utils/logger';
+import { webSocketService } from '@/features/chat/websocket.service';
+import { disconnectAllSockets } from '@/hooks/useSocket';
 
 const DEFAULT_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
 
@@ -31,7 +33,7 @@ export function setCookie(
 ): void {
   if (typeof document === 'undefined') return
 
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}`
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}`
 }
 
 /**
@@ -50,9 +52,19 @@ export function removeCookie(name: string): void {
 export function clearUserAuth(): void {
   try {
     // Clear localStorage
-    localStorage.removeItem("user");
+    localStorage.clear();
+    // Clear all sessionStorage (transient data)
+    sessionStorage.clear();
     // Clear cookie
     document.cookie = "user=; path=/; max-age=0";
+
+    // Reset sockets
+    try {
+      webSocketService.reset();
+      disconnectAllSockets();
+    } catch (e) {
+      logger.error("Error resetting sockets during logout:", e);
+    }
   } catch (error) {
     logger.warn("Failed to clear user authentication data:", error);
   }

@@ -14,7 +14,7 @@ import { bankAccountReducer } from "../features/bank-account";
 import chatReducer from "@/features/chat/chatSlice";
 import { reviewReducer } from "@/features/reviews";
 import { userReducer } from "../features/user";
-import { lessonTypesReducer } from "../features/lesson-types";
+
 
 import { webSocketService } from "@/features/chat/websocket.service";
 import { resetChatState } from "@/features/chat/chatSlice";
@@ -52,7 +52,7 @@ export const store = configureStore({
         chat: chatReducer,
         reviews: reviewReducer,
         user: userReducer,
-        lessonTypes: lessonTypesReducer,
+
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({ serializableCheck: false }).concat(chatMiddleware),

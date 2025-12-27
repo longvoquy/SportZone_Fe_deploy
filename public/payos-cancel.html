@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán đã hủy</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+        }
+        .cancel {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: #1a1a1a;
+            margin: 0 0 0.5rem 0;
+        }
+        p {
+            color: #6b7280;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="cancel">✕</div>
+        <h1>Đã hủy thanh toán</h1>
+        <p>Cửa sổ sẽ tự động đóng...</p>
+    </div>
+
+    <script>
+        // Auto close window after 1.5 seconds
+        setTimeout(() => {
+            window.close();
+            
+            // If window.close() doesn't work (some browsers block it),
+            // try redirecting to a blank page
+            if (!window.closed) {
+                window.location.href = 'about:blank';
+            }
+        }, 1500);
+    </script>
+</body>
+</html>

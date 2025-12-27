@@ -172,11 +172,15 @@ export interface BookingState {
     invoices: Invoice[];
     invoicesPagination: PaginationInfo | null;
     upcomingBooking?: UpcomingBooking | null;
+    // PayOS payment link response
+    paymentLink?: { checkoutUrl: string; paymentLinkId: string; orderCode: number } | null;
     // Separate loading flags for better UI control
     loadingBookings: boolean;
     loadingInvoices: boolean;
     loadingUpcoming: boolean;
+    loadingPayment?: boolean; // Loading state for PayOS payment
     error: ErrorResponse | null;
+    paymentError?: ErrorResponse | null; // Separate error for payment
 }
 
 export interface ErrorResponse {

@@ -98,7 +98,6 @@ const mapApiCoachDetailToAppCoachDetail = (apiCoach: any): import("../../types/c
         createdAt: apiCoach?.createdAt || "",
         memberSince,
         availableSlots: Array.isArray(apiCoach?.availableSlots) ? apiCoach.availableSlots : [],
-        lessonTypes: Array.isArray(apiCoach?.lessonTypes) ? apiCoach.lessonTypes : [],
         price,
         coachingDetails: {
             experience,

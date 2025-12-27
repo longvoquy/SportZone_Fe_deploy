@@ -28,7 +28,7 @@ const ActiveChatView: React.FC<ActiveChatViewProps> = ({ onClose }) => {
         const userData = sessionStorage.getItem('user');
         if (!userData) return null;
         const user = JSON.parse(userData);
-        return user.id || user._id;
+        return user._id;
     };
 
     // Scroll to bottom on new messages

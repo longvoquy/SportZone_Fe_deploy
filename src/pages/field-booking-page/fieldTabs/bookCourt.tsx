@@ -342,6 +342,29 @@ export const BookCourtTab: React.FC<BookCourtTabProps> = ({
         const slotDuration = venue?.slotDuration || 60;
         const slotEndTime = getSlotEndTime(slotTime);
 
+        // Check if clicking on a slot that's already in the selected range - deselect if yes
+        if (selectedStartTime !== null && selectedEndTime !== null) {
+            const [startHour, startMin] = selectedStartTime.split(':').map(Number);
+            const [endHour, endMin] = selectedEndTime.split(':').map(Number);
+            const [clickedHour, clickedMin] = slotTime.split(':').map(Number);
+
+            const startTotal = startHour * 60 + startMin;
+            const endTotal = endHour * 60 + endMin;
+            const clickedTotal = clickedHour * 60 + clickedMin;
+
+            // If clicked slot is within current range, deselect (clear selection)
+            if (clickedTotal >= startTotal && clickedTotal < endTotal) {
+                setSelectedStartTime(null);
+                setSelectedEndTime(null);
+                setFormData((prev) => ({
+                    ...prev,
+                    startTime: '',
+                    endTime: '',
+                }));
+                return;
+            }
+        }
+
         if (selectedStartTime === null) {
             // Chọn block đầu tiên: set cả start và end của block đó
             setSelectedStartTime(slotTime);
