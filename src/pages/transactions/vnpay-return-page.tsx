@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Loading } from '@/components/ui/loading';
+import logger from '@/utils/logger';
 
 /**
  * Payment verification result from backend
@@ -40,10 +41,11 @@ export default function VNPayReturnPage() {
   useEffect(() => {
     const verifyPayment = async () => {
       try {
-        console.log('[VNPay Return] Starting payment verification...');
-        console.log('[VNPay Return] Full URL:', window.location.href);
-        console.log('[VNPay Return] Location search:', location.search);
-        console.log('[VNPay Return] Current pathname:', location.pathname);
+        logger.debug('[VNPay Return] Starting verification...', {
+          url: window.location.href,
+          search: location.search,
+          pathname: location.pathname
+        });
 
         // VNPay redirects flow:
         // 1. VNPay -> Backend endpoint (verifies signature)
@@ -54,105 +56,41 @@ export default function VNPayReturnPage() {
         // VNPay redirects with params like: ?vnp_TxnRef=xxx&vnp_ResponseCode=00&vnp_SecureHash=yyy&...
         // We MUST pass ALL these params to verify endpoint, NOT create new ones
         const rawQueryString = location.search || window.location.search || '';
-
-        console.log('[VNPay Return] Raw query string from URL:', rawQueryString);
-        console.log('[VNPay Return] Query string length:', rawQueryString.length);
+        logger.debug('[VNPay Return] Raw query string:', rawQueryString);
 
         // Parse to check what params we have
         const queryParams = new URLSearchParams(rawQueryString);
-
-        // Log all query params to verify we're receiving them from VNPay
-        const allParams: Record<string, string> = {};
-        const paramKeys: string[] = [];
-        queryParams.forEach((value, key) => {
-          allParams[key] = value;
-          paramKeys.push(key);
-        });
-
-        console.log('[VNPay Return] All param keys received:', paramKeys);
+        const paramKeys = Array.from(queryParams.keys());
+        logger.debug('[VNPay Return] Param keys:', paramKeys);
 
         // Extract important params for logging
-        const orderId = queryParams.get('vnp_TxnRef');
-        const responseCode = queryParams.get('vnp_ResponseCode');
         const secureHash = queryParams.get('vnp_SecureHash');
-        const amountParam = queryParams.get('amount'); // This shouldn't be here if from VNPay
-        const orderIdParam = queryParams.get('orderId'); // This shouldn't be here if from VNPay
-
-        console.log('[VNPay Return] VNPay params:', {
-          vnp_TxnRef: orderId,
-          vnp_ResponseCode: responseCode,
-          vnp_SecureHash: secureHash ? `${secureHash.substring(0, 20)}...` : 'MISSING',
-          paramCount: paramKeys.length,
-          hasAmount: !!amountParam,
-          hasOrderId: !!orderIdParam,
-          fullParams: allParams
+        logger.debug('[VNPay Return] VNPay params:', {
+          vnp_TxnRef: queryParams.get('vnp_TxnRef'),
+          vnp_ResponseCode: queryParams.get('vnp_ResponseCode'),
+          hasSecureHash: !!secureHash
         });
 
-        // CRITICAL CHECK: If we have amount/orderId but NOT vnp_SecureHash, backend redirected incorrectly
-        if ((amountParam || orderIdParam) && !secureHash) {
-          console.error('[VNPay Return] ❌ ERROR: Backend redirected with amount/orderId instead of VNPay params!');
-          console.error('[VNPay Return] Backend should redirect with VNPay query params from original redirect');
-          console.error('[VNPay Return] Expected: ?vnp_TxnRef=...&vnp_ResponseCode=...&vnp_SecureHash=...');
-          console.error('[VNPay Return] Got: ?amount=...&orderId=...');
-          console.error('[VNPay Return] Backend must preserve VNPay params when redirecting!');
-          setError('Backend không truyền đúng tham số từ VNPay. Vui lòng liên hệ admin.');
-          setStatus('error');
-          return;
-        }
-
-        // Verify we have the essential VNPay params
-        if (!secureHash) {
-          console.warn('[VNPay Return] ⚠️ vnp_SecureHash is missing from URL!');
-          console.warn('[VNPay Return] This means VNPay did not redirect correctly.');
-          console.warn('[VNPay Return] Please check:');
-          console.warn('  1. Backend must preserve VNPay query params when redirecting');
-          console.warn('  2. Backend should redirect to /transactions/vnpay/return with SAME query string from VNPay');
-          console.warn('  3. VNPAY_RETURN_URL in backend .env should point to backend endpoint (which redirects to frontend)');
-        }
-
         // Call verify endpoint via Redux thunk with COMPLETE query string from VNPay
-        // IMPORTANT: Pass the raw query string EXACTLY as received, including leading '?'
+        if (!secureHash) {
+          logger.warn('[VNPay Return] ⚠️ vnp_SecureHash is missing from URL!');
+        }
+
         const queryString = rawQueryString || '';
-        console.log('[VNPay Return] ✅ Sending COMPLETE query string to verify endpoint');
-        console.log('[VNPay Return] Query string preview:', queryString.substring(0, 300) + (queryString.length > 300 ? '...' : ''));
-        console.log('[VNPay Return] Query string contains vnp_SecureHash:', queryString.includes('vnp_SecureHash'));
 
         const result: PaymentVerificationResult = await dispatch(
           verifyVNPayPayment(queryString)
         ).unwrap();
-        console.log('[VNPay Return] ✅ Verification result:', result);
-        console.log('[VNPay Return] Result details:', {
-          success: result.success,
-          successType: typeof result.success,
-          paymentStatus: result.paymentStatus,
-          paymentStatusType: typeof result.paymentStatus,
-          bookingId: result.bookingId,
-          message: result.message,
-          fullResult: JSON.stringify(result, null, 2)
-        });
+        logger.debug('[VNPay Return] ✅ Success:', result);
 
 
-        // Đơn giản hóa: Chỉ dựa vào VNPay response code từ URL params
-        // VNPay response code '00' = thanh toán thành công
         const vnpayResponseCode = queryParams.get('vnp_ResponseCode');
         const isSucceeded = vnpayResponseCode === '00';
 
-        console.log('[VNPay Return] Payment status check:', {
-          isSucceeded,
-          vnpayResponseCode,
-          message: isSucceeded ? 'VNPay báo thanh toán thành công' : `VNPay báo thanh toán thất bại (code: ${vnpayResponseCode})`
-        });
-
         if (isSucceeded) {
-          // Payment successful - lấy bookingId và redirect trực tiếp
-          // Không cần polling, VNPay đã xác nhận thanh toán thành công
-          console.log('[VNPay Return] ✅ VNPay báo thanh toán thành công!');
-
           // Lấy bookingId từ vnp_TxnRef (đây là booking ID từ VNPay)
           const bookingIdFromVNPay = queryParams.get('vnp_TxnRef') || result.bookingId;
           const bookingIdStr = bookingIdFromVNPay ? String(bookingIdFromVNPay).trim() : '';
-
-          console.log('[VNPay Return] Booking ID:', bookingIdStr);
 
           // Hiển thị màn hình thành công và redirect sau 2 giây
           setStatus('success');
@@ -165,10 +103,7 @@ export default function VNPayReturnPage() {
             });
           }, 2000);
         } else {
-          // Payment failed - VNPay response code không phải '00'
           const errorCode = queryParams.get('vnp_ResponseCode');
-
-          console.log('[VNPay Return] ❌ VNPay báo thanh toán thất bại với code:', errorCode);
 
           // Lấy thông báo lỗi từ VNPay hoặc từ backend
           let errorMessage = 'Thanh toán thất bại';
@@ -199,7 +134,7 @@ export default function VNPayReturnPage() {
         }
 
       } catch (err) {
-        console.error('[VNPay Return] ❌ Verification error:', err);
+        logger.error('[VNPay Return] ❌ Error:', err);
         setError(err instanceof Error ? err.message : 'Failed to verify payment');
         setStatus('error');
       }

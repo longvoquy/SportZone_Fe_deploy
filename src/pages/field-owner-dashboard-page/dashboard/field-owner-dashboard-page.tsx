@@ -11,6 +11,7 @@ import CourtBookingDetails from "@/components/pop-up/court-booking-detail"
 import type { FieldOwnerBooking } from "@/types/field-type"
 import { Loading } from "@/components/ui/loading"
 import { useSocket } from "@/hooks/useSocket"
+import logger from "@/utils/logger"
 
 export default function FieldOwnerDashboardPage() {
     const dispatch = useAppDispatch();
@@ -31,7 +32,7 @@ export default function FieldOwnerDashboardPage() {
 
         socket.on('notification', (data: any) => {
             if (data?.type === 'payment_proof_submitted') {
-                console.log("🔔 Received payment proof notification, refreshing bookings...");
+                logger.debug("Received payment proof notification, refreshing bookings...");
                 // Refresh booking list
                 dispatch(getMyFieldsBookings({
                     page: 1,
@@ -50,7 +51,7 @@ export default function FieldOwnerDashboardPage() {
     useEffect(() => {
         const handleNewNotification = (event: Event) => {
             const customEvent = event as CustomEvent<{ id: string; message: string; type?: string }>;
-            console.log("🔔 Received notification via sidebar:", customEvent.detail);
+            logger.debug("Received notification via sidebar:", customEvent.detail);
 
             // Refresh bookings list when any notification arrives
             dispatch(getMyFieldsBookings({
@@ -178,7 +179,7 @@ export default function FieldOwnerDashboardPage() {
                 limit: 50
             }));
         } catch (error: any) {
-            console.error("Accept booking failed", error);
+            logger.error("Accept booking failed", error);
             alert(error?.message || "Không thể chấp nhận booking. Vui lòng thử lại.");
         }
     };
@@ -194,7 +195,7 @@ export default function FieldOwnerDashboardPage() {
                 limit: 50
             }));
         } catch (error: any) {
-            console.error("Reject booking failed", error);
+            logger.error("Reject booking failed", error);
             alert(error?.message || "Không thể từ chối booking. Vui lòng thử lại.");
         }
     };
@@ -214,7 +215,7 @@ export default function FieldOwnerDashboardPage() {
 
     useEffect(() => {
         const loadOwnerData = () => {
-            console.log("[useEffect] Đang tải dữ liệu chủ sân");
+            logger.debug("Đang tải dữ liệu chủ sân");
 
             // Lấy dữ liệu sân và lịch đặt bằng Redux thunks
             try {
@@ -227,7 +228,7 @@ export default function FieldOwnerDashboardPage() {
                     limit: 50 // Lấy nhiều hơn để hiển thị đầy đủ
                 }));
             } catch (err) {
-                console.error("[loadOwnerData] Lỗi khi tải dữ liệu:", err);
+                logger.error("Lỗi khi tải dữ liệu:", err);
             }
         };
 
@@ -248,17 +249,16 @@ export default function FieldOwnerDashboardPage() {
     const bookingData = fieldOwnerBookings || [];
 
     // Debug log để kiểm tra dữ liệu
-    console.log("🔍 [DEBUG] Booking data from Redux:", {
+    logger.debug("Booking data from Redux:", {
         bookingData,
         fieldOwnerBookings,
         fieldOwnerBookingsLoading,
         fieldOwnerBookingsError
     });
 
-    // Hiển thị tất cả booking requests (không lọc theo status)
     const filteredBookings = bookingData;
 
-    console.log("🔍 [DEBUG] All booking requests:", {
+    logger.debug("All booking requests:", {
         filteredBookings,
         totalBookings: bookingData.length,
         pendingBookings: bookingData.filter(b => b.status === "pending").length,
@@ -277,7 +277,7 @@ export default function FieldOwnerDashboardPage() {
         validCurrentPage * ITEMS_PER_PAGE
     );
 
-    console.log("🔍 [DEBUG] Pagination info:", {
+    logger.debug("Pagination info:", {
         totalPages,
         currentPage,
         validCurrentPage,

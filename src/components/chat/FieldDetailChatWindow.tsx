@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import type { Message } from "@/features/chat/chat-type";
+import logger from "@/utils/logger";
 
 interface FieldDetailChatWindowProps {
     onClose: () => void;
@@ -76,7 +77,7 @@ const FieldDetailChatWindow: React.FC<FieldDetailChatWindowProps> = ({
                 await dispatch(getChatRoom(room._id));
 
             } catch (error) {
-                console.error('Failed to initialize chat:', error);
+                logger.error('Failed to initialize chat:', error);
                 dispatch(setCurrentRoom(null));
             }
         };
@@ -92,14 +93,14 @@ const FieldDetailChatWindow: React.FC<FieldDetailChatWindowProps> = ({
     }, [currentRoom?._id]);
 
     const handleSendMessage = async () => {
-        console.log('🔵 [FieldDetailChatWindow] handleSendMessage called', {
+        logger.debug('[FieldDetailChatWindow] handleSendMessage called', {
             hasMessage: !!message.trim(),
             hasCurrentRoom: !!currentRoom,
             currentRoomId: currentRoom?._id,
         });
 
         if (!message.trim() || !currentRoom?._id) {
-            console.warn('⚠️ [FieldDetailChatWindow] Cannot send - missing message or room', {
+            logger.warn('[FieldDetailChatWindow] Cannot send - missing message or room', {
                 message: message.trim(),
                 currentRoomId: currentRoom?._id,
             });
@@ -112,7 +113,7 @@ const FieldDetailChatWindow: React.FC<FieldDetailChatWindowProps> = ({
             return;
         }
 
-        console.log('🚀 [FieldDetailChatWindow] Sending message via WebSocket', {
+        logger.debug('[FieldDetailChatWindow] Sending message via WebSocket', {
             roomId: currentRoom._id,
             contentLength: message.trim().length,
         });

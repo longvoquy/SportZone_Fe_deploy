@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getEkycStatus } from "@/features/field-owner-registration/registrationAPI";
+import logger from "@/utils/logger";
 
 export interface EkycData {
   fullName: string;
@@ -95,7 +96,7 @@ export const useEkycPolling = (): UseEkycPollingReturn => {
         return;
       }
     } catch (err: any) {
-      console.error("Poll eKYC status error:", err);
+      logger.error("Poll eKYC status error:", err);
       
       // Increment attempts on error too, to prevent infinite polling
       attemptsRef.current += 1;

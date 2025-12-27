@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, AlertCircle, Shield } from 'lucide-react';
 import { Loading } from '@/components/ui/loading';
+import logger from '@/utils/logger';
 
 /**
  * eKYC Callback Page
@@ -23,16 +24,15 @@ export default function EkycCallbackPage() {
     const sessionId = searchParams.get('verificationSessionId');
     const statusParam = searchParams.get('status');
 
-    console.log('[eKYC Callback] Starting callback processing...');
-    console.log('[eKYC Callback] Full URL:', window.location.href);
-    console.log('[eKYC Callback] Query params:', {
+    logger.debug('[eKYC Callback] Starting callback processing...');
+    logger.debug('[eKYC Callback] Callback params:', {
       verificationSessionId: sessionId,
       status: statusParam,
     });
 
     // Validate required parameters
     if (!sessionId) {
-      console.error('[eKYC Callback] ❌ No verificationSessionId in URL');
+      logger.error('[eKYC Callback] No verificationSessionId in URL');
       setError('Không tìm thấy mã phiên xác thực. Vui lòng thử lại.');
       setStatus('error');
       return;
@@ -43,7 +43,7 @@ export default function EkycCallbackPage() {
 
     // Process the verification status
     if (statusParam === 'Approved') {
-      console.log('[eKYC Callback] ✅ eKYC verification approved!');
+      logger.debug('[eKYC Callback] eKYC verification approved!');
 
       // Immediately show success UI
       setStatus('success');
@@ -56,10 +56,10 @@ export default function EkycCallbackPage() {
             { type: 'ekyc-verified', sessionId, status: 'Approved' },
             window.location.origin
           );
-          console.log('[eKYC Callback] ✅ Sent postMessage to parent window');
+          logger.debug('[eKYC Callback] Sent postMessage to parent window');
         }
       } catch (err) {
-        console.warn('[eKYC Callback] Could not notify parent window:', err);
+        logger.warn('[eKYC Callback] Could not notify parent window:', err);
       }
 
       // Close popup after showing success message (3 seconds to let user see it)
@@ -73,17 +73,17 @@ export default function EkycCallbackPage() {
                   { type: 'ekyc-close-popup', sessionId },
                   window.location.origin
                 );
-                console.log('[eKYC Callback] ✅ Sent close-popup message to parent');
+                logger.debug('[eKYC Callback] Sent close-popup message to parent');
               }
             } catch (postErr) {
-              console.warn('[eKYC Callback] Could not send close message:', postErr);
+              logger.warn('[eKYC Callback] Could not send close message:', postErr);
             }
 
             try {
               window.close();
-              console.log('[eKYC Callback] ✅ Attempted to close popup');
+              logger.debug('[eKYC Callback] Attempted to close popup');
             } catch (err) {
-              console.warn('[eKYC Callback] Could not close popup directly:', err);
+              logger.warn('[eKYC Callback] Could not close popup directly:', err);
             }
           } else {
             // Opener missing.
@@ -102,7 +102,7 @@ export default function EkycCallbackPage() {
       };
     } else {
       // Verification failed or rejected
-      console.log('[eKYC Callback] ❌ eKYC verification failed or rejected');
+      logger.debug('[eKYC Callback] eKYC verification failed or rejected');
       const errorMessage = statusParam
         ? `Xác thực thất bại. Trạng thái: ${statusParam}`
         : 'Xác thực thất bại. Vui lòng thử lại.';
@@ -172,19 +172,19 @@ export default function EkycCallbackPage() {
                   if (window.opener) {
                     // Notify parent first, then try to close
                     try {
-                      window.opener?.postMessage(
+                      window.opener.postMessage(
                         { type: 'ekyc-close-popup', sessionId: verificationSessionId },
                         window.location.origin
                       );
-                      console.log('[eKYC Callback] ✅ Sent close-popup message to parent');
+                      logger.debug('[eKYC Callback] Sent close-popup message to parent');
                     } catch (postErr) {
-                      console.warn('[eKYC Callback] Could not send close message:', postErr);
+                      logger.warn('[eKYC Callback] Could not send close message:', postErr);
                     }
 
                     try {
                       window.close();
                     } catch (err) {
-                      console.warn('[eKYC Callback] Could not close popup directly:', err);
+                      logger.warn('[eKYC Callback] Could not close popup directly:', err);
                     }
                   } else {
                     // Try to close first
@@ -268,7 +268,7 @@ export default function EkycCallbackPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </div >
   );
 }
 

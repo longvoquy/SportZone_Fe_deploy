@@ -21,6 +21,7 @@ import {
   signUpWithEmailAndPassword,
   signInWithGoogle
 } from "../../features/authentication/authThunk";
+import logger from "../../utils/logger";
 
 export default function AuthenticationPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -95,7 +96,7 @@ export default function AuthenticationPage() {
 
       return null;
     } catch (error) {
-      console.warn('Failed to get redirect URL:', error);
+      logger.warn('Failed to get redirect URL:', error);
       return null;
     }
   };
@@ -105,7 +106,7 @@ export default function AuthenticationPage() {
     try {
       localStorage.removeItem('bookingRedirectUrl');
     } catch (error) {
-      console.warn('Failed to clear redirect URL from localStorage:', error);
+      logger.warn('Failed to clear redirect URL from localStorage:', error);
     }
   };
 
@@ -133,9 +134,7 @@ export default function AuthenticationPage() {
     }
   };
 
-  console.log("Dữ liệu trong LOGIN PAGE -----------------------------------");
-  console.log("Dữ liệu trong Form Data: ", JSON.stringify(formData, null, 2));
-  console.log("Trạng thái đăng nhập: ", isLogin);
+  logger.debug("Login page data:", { formData, isLogin });
 
   const handleInputChange = (e: {
     target: { name: string; value: string };
@@ -237,7 +236,7 @@ export default function AuthenticationPage() {
     },
     onError: (error: any) => {
       CustomFailedToast("Đăng nhập Google thất bại");
-      console.error(error);
+      logger.error(error);
     },
   });
 

@@ -26,6 +26,7 @@ import { useAppSelector, useAppDispatch } from "../../store/hook"
 import { getMyBookings, cancelFieldBooking } from "../../features/booking/bookingThunk"
 import type { Booking } from "../../types/booking-type"
 import BookingDetailModal from "@/components/pop-up/booking-detail-modal"
+import logger from "../../utils/logger"
 
 export default function UserBookingsPage() {
   const dispatch = useAppDispatch()
@@ -189,7 +190,7 @@ export default function UserBookingsPage() {
         }))
       }
     } catch (error) {
-      console.error('Failed to perform action:', error)
+      logger.error('Failed to perform action:', error)
     } finally {
       setConfirmState({ open: false, action: null, bookingId: null })
     }

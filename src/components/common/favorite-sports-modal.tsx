@@ -124,7 +124,7 @@ export function FavoriteSportsModal({
       setSelectedSports((prev) => prev.filter((id) => id !== sportId));
       toast.success("Favourite sport removed");
     } catch (e: any) {
-      console.error('Failed to remove favourite sport', e);
+      logger.error('Failed to remove favourite sport', e);
       const message = e?.message || e?.response?.data?.message || 'Failed to remove favourite sport';
       toast.error(message);
     } finally {
@@ -155,7 +155,7 @@ export function FavoriteSportsModal({
         // Notify parent that clear completed so it can turn off favorite filter
         try { onClear && onClear(); } catch { }
       } catch (e: any) {
-        console.error("Failed to clear favourite sports on server", e);
+        logger.error("Failed to clear favourite sports on server", e);
         const message = e?.message || e?.response?.data?.message || "Failed to clear favourite sports";
         toast.error(message);
       } finally {

@@ -8,6 +8,7 @@ import { getMyFields } from "../../../features/field/fieldThunk"
 import { Filter } from "lucide-react"
 import { SportType } from "@/components/enums/ENUMS"
 import { getFieldPinIcon } from "@/utils/fieldPinIcon"
+import logger from "@/utils/logger"
 
 // Constants
 const DEFAULT_FILTERS = {
@@ -192,7 +193,7 @@ const OwnerFieldListPage = () => {
                     attribution: '&copy; OpenStreetMap contributors'
                 }).addTo(mapRef.current)
             } catch (e) {
-                console.error('Failed to initialize map', e)
+                logger.error('Failed to initialize map', e)
             }
         }
 
@@ -203,7 +204,6 @@ const OwnerFieldListPage = () => {
     useEffect(() => {
         const L: any = (window as any).L
         if (!L || !mapRef.current) {
-            console.log('Map not ready:', { L: !!L, mapRef: !!mapRef.current })
             return
         }
 
@@ -212,7 +212,7 @@ const OwnerFieldListPage = () => {
             try {
                 marker.remove?.()
             } catch (e) {
-                console.error('Error removing marker:', e)
+                logger.error('Error removing marker:', e)
             }
         })
         markersRef.current = []
@@ -242,10 +242,10 @@ const OwnerFieldListPage = () => {
                     bounds.extend([field.latitude, field.longitude])
                     hasValidMarkers = true
                 } catch (e) {
-                    console.error('Error adding marker for field:', field.name, e)
+                    logger.error('Error adding marker for field:', field.name, e)
                 }
             } else {
-                console.log('Field missing coordinates:', field.name, { lat: field.latitude, lng: field.longitude })
+                logger.debug('Field missing coordinates', { name: field.name });
             }
         })
 
@@ -253,14 +253,10 @@ const OwnerFieldListPage = () => {
             try {
                 mapRef.current.fitBounds(bounds.pad(0.2))
             } catch (e) {
-                console.error('Error fitting bounds:', e)
+                logger.error('Error fitting bounds:', e)
             }
         } else if (transformedFields.length > 0) {
-            console.log('No valid markers found. Fields:', transformedFields.map(f => ({
-                name: f.name,
-                lat: f.latitude,
-                lng: f.longitude
-            })))
+            logger.debug('No valid markers found for fields');
         }
     }, [transformedFields])
 

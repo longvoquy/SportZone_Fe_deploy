@@ -1,4 +1,5 @@
 import { BASE_URL } from "@/utils/constant-value/constant";
+import logger from "@/utils/logger";
 
 /**
  * Location API endpoints
@@ -97,7 +98,7 @@ class LocationAPIService {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Error sending location:', error);
+      logger.error('Error sending location:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -140,7 +141,7 @@ class LocationAPIService {
       // BE now consistently returns { success, data }
       return json as NearbyFieldsResponse;
     } catch (error) {
-      console.error('Error getting nearby fields:', error);
+      logger.error('Error getting nearby fields:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -175,7 +176,7 @@ class LocationAPIService {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Error updating last location:', error);
+      logger.error('Error updating last location:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -222,7 +223,7 @@ class LocationAPIService {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Error getting location history:', error);
+      logger.error('Error getting location history:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'

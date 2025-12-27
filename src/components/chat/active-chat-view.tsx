@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Send, X, Building, UserCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import logger from '@/utils/logger';
 
 interface ActiveChatViewProps {
     onClose: () => void;
@@ -45,7 +46,7 @@ const ActiveChatView: React.FC<ActiveChatViewProps> = ({ onClose }) => {
 
             // Cleanup: leave room when component unmounts or room changes
             return () => {
-                console.log('🧹 [ActiveChatView] Cleanup - leaving room:', currentRoom._id);
+                logger.debug('[ActiveChatView] Cleanup - leaving room:', currentRoom._id);
                 webSocketService.leaveChatRoom(currentRoom._id);
             };
         }

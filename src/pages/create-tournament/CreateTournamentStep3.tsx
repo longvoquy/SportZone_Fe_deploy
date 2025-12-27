@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import logger from '@/utils/logger';
 
 interface Step3Props {
   formData: any;
@@ -132,7 +133,7 @@ export default function CreateTournamentStep3({ formData, onBack, onUpdate, back
         navigate(`/tournaments/${result._id}`);
       }, 2000);
     } catch (err) {
-      console.error('Failed to create tournament:', err);
+      logger.error('Failed to create tournament:', err);
     }
   };
 

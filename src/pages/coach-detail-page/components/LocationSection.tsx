@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Navigation } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import L from "leaflet";
+import logger from "@/utils/logger";
 
 interface LocationSectionProps {
   coachData: any;
@@ -42,7 +43,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
     // Check if container already has a map instance (from previous render)
     const container = mapContainerRef.current;
     if ((container as any)._leaflet_id) {
-      console.warn('[LocationSection] Container already has a map instance, cleaning up first');
+      logger.warn('[LocationSection] Container already has a map instance, cleaning up first');
       // Try to find and remove existing map
       const existingMap = (L as any).Map.prototype.getContainer ?
         Array.from(document.querySelectorAll('.leaflet-container')).find((el: any) =>
@@ -55,7 +56,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
             mapInstance.remove();
           }
         } catch (e) {
-          console.warn('[LocationSection] Error cleaning up existing map:', e);
+          logger.warn('[LocationSection] Error cleaning up existing map:', e);
         }
       }
       // Clear the leaflet ID
@@ -74,7 +75,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
 
       // Check again if container has a map
       if ((mapContainerRef.current as any)._leaflet_id) {
-        console.warn('[LocationSection] Container has map instance, skipping initialization');
+        logger.warn('[LocationSection] Container has map instance, skipping initialization');
         return;
       }
 
@@ -83,7 +84,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
       const initialZoom = 13;
 
       try {
-        console.log('[LocationSection] Initializing map with center:', initialCenter);
+        logger.debug('[LocationSection] Initializing map with center:', initialCenter);
 
         const map = L.map(mapContainerRef.current!, {
           center: initialCenter,
@@ -99,7 +100,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
         });
 
         tileLayer.addTo(map);
-        console.log('[LocationSection] Tile layer added');
+        logger.debug('[LocationSection] Tile layer added');
 
         // Default marker icon
         const defaultIcon = L.icon({
@@ -117,7 +118,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
         if (mapRef) mapRef.current = map;
 
         setIsMapReady(true);
-        console.log('[LocationSection] Map initialized');
+        logger.debug('[LocationSection] Map initialized');
 
         // Invalidate size multiple times - with safety checks
         // Wait a bit for map to fully initialize before invalidating
@@ -127,7 +128,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
               try {
                 localMapRef.current.invalidateSize(false);
               } catch (error) {
-                console.warn('[LocationSection] Error invalidating size:', error);
+                logger.warn('[LocationSection] Error invalidating size:', error);
               }
             }
           }, 150);
@@ -137,7 +138,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
               try {
                 localMapRef.current.invalidateSize(false);
               } catch (error) {
-                console.warn('[LocationSection] Error invalidating size:', error);
+                logger.warn('[LocationSection] Error invalidating size:', error);
               }
             }
           }, 400);
@@ -147,13 +148,13 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
               try {
                 localMapRef.current.invalidateSize(false);
               } catch (error) {
-                console.warn('[LocationSection] Error invalidating size:', error);
+                logger.warn('[LocationSection] Error invalidating size:', error);
               }
             }
           }, 800);
         });
       } catch (error) {
-        console.error('[LocationSection] Failed to initialize map:', error);
+        logger.error('[LocationSection] Failed to initialize map:', error);
         setIsMapReady(true); // Hide loading spinner even on error
       }
     };
@@ -191,14 +192,14 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
   // Update marker when currentCoach changes
   useEffect(() => {
     if (!localMapRef.current) {
-      console.log('[LocationSection] Map not ready yet, skipping marker update');
+      logger.debug('[LocationSection] Map not ready yet, skipping marker update');
       return;
     }
 
     // Check both currentCoach and coachData for locationData
     const locationData = (currentCoach as any)?.locationData || (coachData as any)?.locationData;
 
-    console.log('[LocationSection] Checking for coordinates:', {
+    logger.debug('[LocationSection] Checking for coordinates:', {
       currentCoach: currentCoach ? Object.keys(currentCoach) : null,
       coachData: coachData ? Object.keys(coachData) : null,
       locationData: locationData ? Object.keys(locationData) : null,
@@ -210,7 +211,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
     const hasCoords = Array.isArray(geo) && geo.length === 2 && Number.isFinite(geo[0]) && Number.isFinite(geo[1]);
 
     if (!hasCoords) {
-      console.log('[LocationSection] No valid coordinates for marker', {
+      logger.debug('[LocationSection] No valid coordinates for marker', {
         geo,
         isArray: Array.isArray(geo),
         length: geo?.length,
@@ -221,7 +222,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
     }
 
     const [lng, lat] = geo as number[];
-    console.log('[LocationSection] Updating marker to:', lat, lng);
+    logger.debug('[LocationSection] Updating marker to:', lat, lng);
 
     // Get or create default icon
     const defaultIcon = (L as any).Marker.prototype.options.icon || L.icon({
@@ -236,11 +237,11 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
 
     // Update or create marker
     if (!localMarkerRef.current) {
-      console.log('[LocationSection] Creating new marker');
+      logger.debug('[LocationSection] Creating new marker');
       localMarkerRef.current = L.marker([lat, lng], { icon: defaultIcon }).addTo(localMapRef.current);
       if (markerRef) markerRef.current = localMarkerRef.current;
     } else {
-      console.log('[LocationSection] Updating existing marker position');
+      logger.debug('[LocationSection] Updating existing marker position');
       localMarkerRef.current.setLatLng([lat, lng]);
     }
 
@@ -256,12 +257,12 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
     const parentMapRef = mapRef;
 
     return () => {
-      console.log('[LocationSection] Cleaning up map and marker');
+      logger.debug('[LocationSection] Cleaning up map and marker');
       if (marker) {
         try {
           marker.remove();
         } catch (e) {
-          console.warn('[LocationSection] Error removing marker:', e);
+          logger.warn('[LocationSection] Error removing marker:', e);
         }
         localMarkerRef.current = null;
       }
@@ -269,7 +270,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
         try {
           map.remove();
         } catch (e) {
-          console.warn('[LocationSection] Error removing map:', e);
+          logger.warn('[LocationSection] Error removing map:', e);
         }
         localMapRef.current = null;
         if (parentMapRef) parentMapRef.current = null;

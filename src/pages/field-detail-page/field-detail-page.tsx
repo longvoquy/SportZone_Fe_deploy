@@ -1,4 +1,5 @@
 import type React from "react"
+import logger from "@/utils/logger"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useAppDispatch, useAppSelector } from "@/store/hook"
@@ -59,43 +60,36 @@ const FieldDetailPage: React.FC = () => {
   const isFavourite = Boolean(id && favouriteFieldIds.includes(id));
 
   const toggleFavourite = async () => {
-    console.log("🔥 toggleFavourite called", { authUser: !!authUser });
 
     if (!authUser) {
-      console.log("❌ No auth user found");
       return CustomFailedToast("Vui lòng đăng nhập để thêm sân vào yêu thích")
     }
 
     if (!id) {
-      console.log("❌ No field id");
       return;
     }
-
-    console.log("✅ Starting favourite toggle", { isFavourite, fieldId: id });
 
     try {
       setFavLoading(true)
       if (isFavourite) {
         const action: any = await dispatch(removeFavouriteFields({ favouriteFields: [id] }))
-        console.log("removeFavouriteFields result:", action);
         if (action?.meta?.requestStatus === "fulfilled") {
           CustomSuccessToast("Đã bỏ yêu thích sân")
         } else {
-          console.error("removeFavouriteFields failed:", action);
+          logger.error("removeFavouriteFields failed", { action });
           CustomFailedToast(String(action?.payload?.message || action?.payload || "Bỏ yêu thích thất bại"))
         }
       } else {
         const action: any = await dispatch(setFavouriteFields({ favouriteFields: [id] }))
-        console.log("setFavouriteFields result:", action);
         if (action?.meta?.requestStatus === "fulfilled") {
           CustomSuccessToast("Đã thêm sân vào yêu thích")
         } else {
-          console.error("setFavouriteFields failed:", action);
+          logger.error("setFavouriteFields failed", { action });
           CustomFailedToast(String(action?.payload?.message || action?.payload || "Thêm yêu thích thất bại"))
         }
       }
     } catch (err: any) {
-      console.error("toggleFavourite error:", err);
+      logger.error("toggleFavourite error", { err });
       CustomFailedToast(err?.message || "Thao tác thất bại")
     } finally {
       setFavLoading(false)

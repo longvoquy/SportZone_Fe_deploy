@@ -19,6 +19,7 @@ import type {
     FieldOwnerBookingsParams,
     FieldOwnerBookingsResponse,
 } from "../../types/field-type";
+import logger from "@/utils/logger";
 import axiosPublic from "../../utils/axios/axiosPublic";
 import axiosPrivate from "../../utils/axios/axiosPrivate";
 import {
@@ -114,9 +115,7 @@ export const getAllFields = createAsyncThunk<
         const url = queryParams.toString() ? `${FIELDS_API}?${queryParams}` : FIELDS_API;
         const response = await axiosPublic.get(url);
 
-        console.log("-----------------------------------------------------");
-        console.log("Get all fields response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Get all fields response:", response.data);
 
         const raw = response.data;
         const apiList = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
@@ -162,9 +161,7 @@ export const getAllFieldsPaginated = createAsyncThunk<
         const url = `${FIELDS_PAGINATED_API}?${queryParams}`;
         const response = await axiosPublic.get(url);
 
-        console.log("-----------------------------------------------------");
-        console.log("Get all fields paginated response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Get all fields paginated response:", response.data);
 
         const raw = response.data;
         // Handle API response formats:
@@ -208,9 +205,7 @@ export const getMyFields = createAsyncThunk<
         const url = queryParams.toString() ? `${GET_MY_FIELDS_API}?${queryParams}` : GET_MY_FIELDS_API;
         const response = await axiosPrivate.get(url);
 
-        console.log("-----------------------------------------------------");
-        console.log("Get my fields response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Get my fields response:", response.data);
 
         const raw = response.data;
         // Handle API response format: { success: true, data: { fields: [...], pagination: {...} } }
@@ -238,48 +233,18 @@ export const getFieldById = createAsyncThunk<
     { rejectValue: ErrorResponse }
 >("field/getFieldById", async (id, thunkAPI) => {
     try {
-        console.log("🚀 [FIELD THUNK] Starting getFieldById request:", {
-            fieldId: id,
-            apiUrl: FIELD_BY_ID_API(id),
-            timestamp: new Date().toISOString()
-        });
+        logger.debug("getFieldById request:", { fieldId: id });
 
         const response = await axiosPublic.get(FIELD_BY_ID_API(id));
-
-        console.log("📥 [FIELD THUNK] Raw API response received:", {
-            fieldId: id,
-            status: response.status,
-            data: response.data,
-            timestamp: new Date().toISOString()
-        });
+        logger.debug("getFieldById response:", response.data);
 
         const raw = response.data;
         const apiField = raw?.data ?? raw;
         const mapped = mapApiFieldToAppField(apiField);
 
-        console.log("🔄 [FIELD THUNK] Field data mapped successfully:", {
-            fieldId: id,
-            originalApiField: apiField,
-            mappedField: {
-                id: mapped.id,
-                name: mapped.name,
-                location: mapped.location,
-                basePrice: mapped.basePrice,
-                sportType: mapped.sportType,
-                isActive: mapped.isActive
-            },
-            timestamp: new Date().toISOString()
-        });
-
         return { success: true, data: mapped, message: raw?.message } as unknown as FieldResponse;
     } catch (error: any) {
-        console.error("❌ [FIELD THUNK] Error fetching field by ID:", {
-            fieldId: id,
-            error: error.message,
-            status: error.response?.status,
-            responseData: error.response?.data,
-            timestamp: new Date().toISOString()
-        });
+        logger.error("Error fetching field by ID:", error);
 
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to fetch field",
@@ -304,10 +269,7 @@ export const checkFieldAvailability = createAsyncThunk<
 
         const url = `${FIELD_AVAILABILITY_API(params.id)}?${queryParams}`;
         const response = await axiosPublic.get(url);
-
-        console.log("-----------------------------------------------------");
-        console.log("Check availability response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Check availability response:", response.data);
 
         const raw = response.data;
         const availabilityData = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
@@ -351,10 +313,7 @@ export const createField = createAsyncThunk<
         }
 
         const response = await axiosPrivate.post(CREATE_FIELD_API, requestPayload);
-
-        console.log("-----------------------------------------------------");
-        console.log("Create field response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Create field response:", response.data);
 
         const raw = response.data;
         const apiField = raw?.data ?? raw;
@@ -380,12 +339,7 @@ export const createFieldWithImages = createAsyncThunk<
     try {
         const formData = new FormData();
 
-        console.log("🚀 [FIELD THUNK] Starting createFieldWithImages:", {
-            fieldName: payload.name,
-            imagesCount: images?.length || 0,
-            locationData,
-            timestamp: new Date().toISOString()
-        });
+        logger.debug("createFieldWithImages started", { fieldName: payload.name });
 
         // Add basic field data
         formData.append("name", payload.name);
@@ -410,11 +364,10 @@ export const createFieldWithImages = createAsyncThunk<
             };
         }
 
-        console.log("📍 [FIELD THUNK] Location object:", locationObject);
+        logger.debug("Location object:", locationObject);
         formData.append("location", JSON.stringify(locationObject));
 
         // Debug: Log operating hours before processing
-        console.log("🕒 [FIELD THUNK] Original operatingHours:", payload.operatingHours);
 
         // Add operating hours as JSON string
         // Convert duration from number to string to match backend schema
@@ -424,7 +377,6 @@ export const createFieldWithImages = createAsyncThunk<
         }));
 
         const operatingHoursString = JSON.stringify(operatingHoursForAPI);
-        console.log("🕒 [FIELD THUNK] Operating hours JSON string:", operatingHoursString);
         formData.append("operatingHours", operatingHoursString);
 
         // Add slot configuration as strings (required for multipart/form-data)
@@ -436,110 +388,57 @@ export const createFieldWithImages = createAsyncThunk<
         formData.append("basePrice", payload.basePrice.toString());
 
         // Debug: Log price ranges before processing
-        console.log("💰 [FIELD THUNK] Original priceRanges:", payload.priceRanges);
 
-        // Add price ranges as JSON string
-        // Always send priceRanges, even if empty
+        // Price ranges serialization
         let priceRangesString = "[]";
         if (payload.priceRanges && payload.priceRanges.length > 0) {
             const priceRangesForAPI = payload.priceRanges.map(range => ({
                 ...range,
-                multiplier: range.multiplier.toString() // Ensure it's a string
+                multiplier: range.multiplier.toString()
             }));
             priceRangesString = JSON.stringify(priceRangesForAPI);
         } else {
-            // If no priceRanges provided, create default from operating hours
             const defaultPriceRanges = payload.operatingHours.map(oh => ({
                 day: oh.day,
                 start: oh.start,
                 end: oh.end,
-                multiplier: "1.0" // String value
+                multiplier: "1.0"
             }));
             priceRangesString = JSON.stringify(defaultPriceRanges);
         }
-
-        console.log("💰 [FIELD THUNK] Price ranges JSON string:", priceRangesString);
         formData.append("priceRanges", priceRangesString);
 
-        // Debug: Log amenities before processing
-        console.log("🛍️ [FIELD THUNK] Original amenities:", payload.amenities);
-
-        // Add amenities as JSON string
-        // Always send amenities, even if empty
+        // Amenities serialization
         let amenitiesString = "[]";
         if (payload.amenities && payload.amenities.length > 0) {
             const amenitiesForAPI = payload.amenities.map(amenity => ({
                 ...amenity,
-                price: amenity.price.toString() // Ensure it's a string
+                price: amenity.price.toString()
             }));
             amenitiesString = JSON.stringify(amenitiesForAPI);
         }
-
-        console.log("🛍️ [FIELD THUNK] Amenities JSON string:", amenitiesString);
         formData.append("amenities", amenitiesString);
 
-        // Add number of courts if specified
         if (payload.numberOfCourts !== undefined && payload.numberOfCourts !== null) {
             formData.append("numberOfCourts", payload.numberOfCourts.toString());
-            console.log("🏟️ [FIELD THUNK] Number of courts:", payload.numberOfCourts);
         }
 
-        // Add image files (OPTIONAL)
         if (images && images.length > 0) {
-            console.log("🖼️ [FIELD THUNK] Adding images:", images.map(img => ({
-                name: img.name,
-                size: img.size,
-                type: img.type
-            })));
-
             images.forEach((image) => {
                 formData.append("images", image);
             });
-        } else {
-            console.log("🖼️ [FIELD THUNK] No images to upload");
         }
 
-        // Log all formData entries for debugging
-        console.log("📋 [FIELD THUNK] FormData entries:");
-        for (const [key, value] of formData.entries()) {
-            if (key === 'images' && value instanceof File) {
-                console.log(`  ${key}: File - ${value.name} (${value.size} bytes)`);
-            } else if (typeof value === 'string' && value.length > 100) {
-                console.log(`  ${key}: ${value.substring(0, 100)}... (${value.length} chars)`);
-            } else {
-                console.log(`  ${key}: ${value}`);
-            }
-        }
-
-        console.log("🚀 [FIELD THUNK] Sending request to:", CREATE_FIELD_WITH_IMAGES_API);
         const response = await axiosPrivate.post(CREATE_FIELD_WITH_IMAGES_API, formData);
-
-        console.log("✅ [FIELD THUNK] Create field with images response:", {
-            status: response.status,
-            data: response.data,
-            timestamp: new Date().toISOString()
-        });
+        logger.debug("createFieldWithImages response:", response.data);
 
         const raw = response.data;
         const apiField = raw?.data ?? raw;
         const mapped = mapApiFieldToAppField(apiField);
 
-        console.log("🎉 [FIELD THUNK] Field created successfully:", {
-            fieldId: mapped.id,
-            fieldName: mapped.name,
-            timestamp: new Date().toISOString()
-        });
-
         return { success: true, data: mapped, message: raw?.message } as unknown as FieldResponse;
     } catch (error: any) {
-        console.error("❌ [FIELD THUNK] Error creating field with images:", {
-            error: error.message,
-            status: error.response?.status,
-            responseData: error.response?.data,
-            requestData: error.config?.data ? 'FormData (multipart)' : 'No data',
-            timestamp: new Date().toISOString()
-        });
-
+        logger.error("createFieldWithImages error:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to create field with images",
             status: error.response?.status?.toString() || "500",
@@ -557,10 +456,7 @@ export const updateField = createAsyncThunk<
 >("field/updateField", async ({ id, payload }, thunkAPI) => {
     try {
         const response = await axiosPrivate.put(UPDATE_FIELD_API(id), payload);
-
-        console.log("-----------------------------------------------------");
-        console.log("Update field response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Update field response:", response.data);
 
         const raw = response.data;
         const apiField = raw?.data ?? raw;
@@ -585,13 +481,7 @@ export const updateFieldWithImages = createAsyncThunk<
     try {
         const formData = new FormData();
 
-        console.log("🚀 [FIELD THUNK] Starting updateFieldWithImages:", {
-            fieldId: id,
-            avatarIncluded: !!payload.avatar,
-            galleryCount: payload.gallery?.length || 0,
-            keptImagesCount: payload.keptImages?.length || 0,
-            timestamp: new Date().toISOString()
-        });
+        logger.debug("updateFieldWithImages started", { fieldId: id });
 
         // Add basic field data if present
         if (payload.name) formData.append("name", payload.name);
@@ -661,20 +551,16 @@ export const updateFieldWithImages = createAsyncThunk<
         // Add courts to delete
         if (payload.courtsToDelete && payload.courtsToDelete.length > 0) {
             formData.append("courtsToDelete", JSON.stringify(payload.courtsToDelete));
-            console.log("🗑️ [FIELD THUNK] Courts to delete:", payload.courtsToDelete);
         }
 
         // Add number of courts if specified
         if (payload.numberOfCourts !== undefined) {
             formData.append("numberOfCourts", payload.numberOfCourts.toString());
-            console.log("🏟️ [FIELD THUNK] Number of courts:", payload.numberOfCourts);
         }
 
 
-        console.log("🚀 [FIELD THUNK] Sending request to:", UPDATE_FIELD_WITH_IMAGES_API(id));
         const response = await axiosPrivate.put(UPDATE_FIELD_WITH_IMAGES_API(id), formData);
-
-        console.log("✅ [FIELD THUNK] Update field with images response:", response.data);
+        logger.debug("Update field with images response:", response.data);
 
         const raw = response.data;
         const apiField = raw?.data ?? raw;
@@ -682,12 +568,7 @@ export const updateFieldWithImages = createAsyncThunk<
         return { success: true, data: mapped, message: raw?.message } as unknown as FieldResponse;
 
     } catch (error: any) {
-        console.error("❌ [FIELD THUNK] Error updating field with images:", {
-            error: error.message,
-            status: error.response?.status,
-            responseData: error.response?.data,
-            timestamp: new Date().toISOString()
-        });
+        logger.error("updateFieldWithImages error:", error);
 
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to update field with images",
@@ -706,10 +587,7 @@ export const deleteField = createAsyncThunk<
 >("field/deleteField", async (id, thunkAPI) => {
     try {
         const response = await axiosPrivate.delete(DELETE_FIELD_API(id));
-
-        console.log("-----------------------------------------------------");
-        console.log("Delete field response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Delete field response:", response.data);
 
         return { ...response.data, fieldId: id };
     } catch (error: any) {
@@ -730,10 +608,7 @@ export const schedulePriceUpdate = createAsyncThunk<
 >("field/schedulePriceUpdate", async ({ id, payload }, thunkAPI) => {
     try {
         const response = await axiosPrivate.post(SCHEDULE_PRICE_UPDATE_API(id), payload);
-
-        console.log("-----------------------------------------------------");
-        console.log("Schedule price update response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Schedule price update response:", response.data);
 
         const raw = response.data;
         return {
@@ -762,10 +637,7 @@ export const cancelScheduledPriceUpdate = createAsyncThunk<
         const response = await axiosPrivate.delete(CANCEL_SCHEDULED_PRICE_UPDATE_API(id), {
             data: payload,
         });
-
-        console.log("-----------------------------------------------------");
-        console.log("Cancel scheduled price update response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Cancel scheduled price update response:", response.data);
 
         const raw = response.data;
         return {
@@ -790,10 +662,7 @@ export const getScheduledPriceUpdates = createAsyncThunk<
 >("field/getScheduledPriceUpdates", async (id, thunkAPI) => {
     try {
         const response = await axiosPrivate.get(GET_SCHEDULED_PRICE_UPDATES_API(id));
-
-        console.log("-----------------------------------------------------");
-        console.log("Get scheduled price updates response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Get scheduled price updates response:", response.data);
 
         const raw = response.data;
         const scheduledUpdates = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
@@ -821,9 +690,7 @@ export const getFieldAmenities = createAsyncThunk<
     try {
         const response = await axiosPublic.get(GET_FIELD_AMENITIES_API(fieldId));
 
-        console.log("-----------------------------------------------------");
-        console.log("Get field amenities response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Get field amenities response:", response.data);
 
         const raw = response.data;
         return {
@@ -850,9 +717,7 @@ export const updateFieldAmenities = createAsyncThunk<
     try {
         const response = await axiosPrivate.put(UPDATE_FIELD_AMENITIES_API(fieldId), payload);
 
-        console.log("-----------------------------------------------------");
-        console.log("Update field amenities response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Update field amenities response:", response.data);
 
         const raw = response.data;
         return {

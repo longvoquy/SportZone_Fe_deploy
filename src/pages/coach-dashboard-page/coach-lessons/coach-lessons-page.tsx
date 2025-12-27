@@ -22,6 +22,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { getAllFields } from "@/features/field";
 import { createLessonType } from "@/features/lesson-types";
 import { CustomSuccessToast, CustomFailedToast } from "@/components/toast/notificiation-toast";
+import logger from "@/utils/logger";
 // Mock field data (fallback)
 const mockFields = [
   {
@@ -164,7 +165,7 @@ export default function CoachLessonsPage() {
 
       const promises = payloads.map((p) => dispatch(createLessonType(p)).unwrap());
       const results = await Promise.all(promises);
-      console.log("Created lesson types:", results);
+      logger.debug("Created lesson types:", results);
       CustomSuccessToast("Tạo buổi học thành công!");
       // reset form
       setStep(1);
@@ -174,7 +175,7 @@ export default function CoachLessonsPage() {
       setLessonPrice("");
       setSelectedFields([]);
     } catch (err: any) {
-      console.error("Failed creating lesson types:", err);
+      logger.error("Failed creating lesson types:", err);
       CustomFailedToast(err?.message || "Tạo buổi học thất bại");
     } finally {
       setCreating(false);

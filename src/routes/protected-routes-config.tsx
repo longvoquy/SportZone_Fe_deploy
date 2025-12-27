@@ -28,6 +28,7 @@ interface ProtectedRouteProps {
 
 // Import useAuth from auth-wrapper to avoid duplication
 import { useAuth } from './auth-wrapper';
+import logger from "@/utils/logger";
 
 // Simple role checking utility
 const hasUserRole = (user: User | null, role: UserRole): boolean => {
@@ -64,7 +65,7 @@ const ProtectedRoute = ({
   if (allowedRoles && allowedRoles.length > 0) {
     const hasAllowedRole = allowedRoles.some((role) => hasUserRole(user, role));
     if (!hasAllowedRole) {
-      console.warn('ProtectedRoute - User role mismatch:', {
+      logger.warn('ProtectedRoute - User role mismatch:', {
         userRole: user?.role,
         allowedRoles,
         path: location.pathname
@@ -123,7 +124,7 @@ export const AuthenticatedRedirect = ({
 
   // Đợi auth loading complete trước khi render
   if (loading) {
-    console.log("⏳ Auth loading, showing spinner...");
+    logger.debug("Auth loading, showing spinner...");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loading size={60} />
@@ -132,7 +133,7 @@ export const AuthenticatedRedirect = ({
   }
 
   // Giải pháp 1: Tất cả roles đều có thể xem landing page - không redirect
-  console.log("✅ AuthenticatedRedirect - Rendering landing page for all roles");
+  logger.debug("AuthenticatedRedirect - Rendering landing page for all roles");
   return <>{children}</>;
 };
 

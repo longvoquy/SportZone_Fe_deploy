@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { MessageCircle, X } from 'lucide-react';
 import ConversationList from './conversation-list';
 import ActiveChatView from './active-chat-view';
+import logger from '@/utils/logger';
 
 interface FloatingChatWidgetProps {
     initialOpen?: boolean;
@@ -39,13 +40,13 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
 
                 // Check for Field Owner role or capability
                 if (user.role === 'field_owner' || user.role === 'FIELD_OWNER' || user.isFieldOwner) {
-                    console.log('🏭 [FloatingChatWidget] Fetching Field Owner rooms');
+                    logger.debug('[FloatingChatWidget] Fetching Field Owner rooms');
                     dispatch(getFieldOwnerChatRooms());
                 }
 
                 // Check for Coach role
                 if (user.role === 'coach' || user.role === 'COACH' || user.isCoach) {
-                    console.log('🎓 [FloatingChatWidget] Fetching Coach rooms');
+                    logger.debug('[FloatingChatWidget] Fetching Coach rooms');
                     dispatch(getCoachChatRooms());
                 }
             };

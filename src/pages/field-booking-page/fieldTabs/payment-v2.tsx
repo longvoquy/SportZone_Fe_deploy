@@ -1,9 +1,8 @@
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+﻿import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle, AlertCircle, Wallet, Upload, X, ImageIcon, Clock } from "lucide-react";
+import { AlertCircle, Wallet, Clock } from "lucide-react";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { useLocation } from "react-router-dom";
 import type { Field } from "@/types/field-type";
@@ -20,12 +19,13 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import logger from "@/utils/logger";
 // Helper function for formatting VND
 const formatVND = (value: number): string => {
     try {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
     } catch {
-        return `${value.toLocaleString('vi-VN')} ₫`;
+        return `${value.toLocaleString('vi-VN')} â‚«`;
     }
 };
 
@@ -37,7 +37,7 @@ interface PaymentV2Props {
     bookingData?: BookingFormData;
     onPaymentComplete?: (bookingData: BookingFormData) => void;
     onBack?: () => void;
-    onCountdownExpired?: () => void; // Callback khi countdown hết
+    onCountdownExpired?: () => void; // Callback khi countdown háº¿t
     amenities?: Array<{ id: string; name: string; price: number }>;
     selectedAmenityIds?: string[];
 }
@@ -48,7 +48,6 @@ interface PaymentV2Props {
 export const PaymentV2: React.FC<PaymentV2Props> = ({
     venue: venueProp,
     bookingData,
-    onPaymentComplete,
     onBack,
     onCountdownExpired,
     amenities = [],
@@ -57,25 +56,13 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
     const location = useLocation();
     const dispatch = useAppDispatch();
     const currentField = useAppSelector((state) => state.field.currentField);
-    const user = useAppSelector((state) => state.auth.user);
     const venue = (venueProp || currentField || (location.state as any)?.venue) as Field | undefined;
 
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
     const [paymentError, setPaymentError] = useState<string | null>(null);
-    const [bookingId, setBookingId] = useState<string | null>(null);
-    const [verificationResult, setVerificationResult] = useState<{
-        status: string;
-        reason?: string;
-        isAiVerified: boolean;
-    } | null>(null);
     const [heldBookingId, setHeldBookingId] = useState<string | null>(null);
     const [countdown, setCountdown] = useState<number>(300); // 5 minutes in seconds
     const [holdError, setHoldError] = useState<string | null>(null);
-    const [proofImage, setProofImage] = useState<File | null>(null);
-    const [proofPreview, setProofPreview] = useState<string | null>(null);
-    const [bankAccount, setBankAccount] = useState<any>(null);
-    const [loadingBankAccount, setLoadingBankAccount] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
 
@@ -175,12 +162,8 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
         );
     }, [venue, formData.date, formData.startTime, formData.endTime, calculateDuration, calculateTotal]);
 
-    // Fetch bank account info when component mounts
-    useEffect(() => {
-        if (venue?.id) {
-            fetchBankAccount(venue.id);
-        }
-    }, [venue?.id]);
+    // Note: Bank account info is not needed for PayOS payment flow
+    // PayOS handles payment through their checkout URL
 
     // Restore held booking from sessionStorage on mount (created in PersonalInfo step)
     useEffect(() => {
@@ -188,14 +171,14 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
             const storedBookingId = sessionStorage.getItem('heldBookingId');
             const storedHoldTime = sessionStorage.getItem('heldBookingTime');
 
-            console.log('[PAYMENT V2] Checking sessionStorage for held booking:', {
+            logger.debug('[PAYMENT V2] Checking sessionStorage for held booking:', {
                 storedBookingId,
                 storedHoldTime
             });
 
             // Validate stored booking ID
             if (!storedBookingId || storedBookingId.trim() === '' || storedBookingId === 'undefined' || storedBookingId === 'null') {
-                console.warn('⚠️ [PAYMENT V2] Invalid or missing heldBookingId in sessionStorage:', storedBookingId);
+                logger.warn('[PAYMENT V2] Invalid or missing heldBookingId in sessionStorage:', storedBookingId);
                 setHoldError('Chưa có booking được giữ chỗ. Vui lòng quay lại bước trước.');
                 return;
             }
@@ -203,7 +186,7 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
             if (storedHoldTime) {
                 const holdTime = parseInt(storedHoldTime);
                 if (isNaN(holdTime)) {
-                    console.error('❌ [PAYMENT V2] Invalid hold time:', storedHoldTime);
+                    logger.error('[PAYMENT V2] Invalid hold time:', storedHoldTime);
                     setHoldError('Dữ liệu booking không hợp lệ. Vui lòng quay lại bước trước.');
                     return;
                 }
@@ -215,24 +198,24 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
                 if (remaining > 0) {
                     setHeldBookingId(storedBookingId);
                     setCountdown(remaining);
-                    console.log('✅ [PAYMENT V2] Restored held booking:', {
+                    logger.debug('[PAYMENT V2] Restored held booking:', {
                         bookingId: storedBookingId,
                         remainingSeconds: remaining
                     });
                 } else {
                     // Booking expired, clear sessionStorage
-                    console.warn('⚠️ [PAYMENT V2] Held booking expired');
+                    logger.warn('[PAYMENT V2] Held booking expired');
                     sessionStorage.removeItem('heldBookingId');
                     sessionStorage.removeItem('heldBookingCountdown');
                     sessionStorage.removeItem('heldBookingTime');
                     setHoldError('Thời gian giữ chỗ đã hết. Vui lòng quay lại và đặt lại.');
                 }
             } else {
-                console.warn('⚠️ [PAYMENT V2] No hold time found in sessionStorage');
+                logger.warn('[PAYMENT V2] No hold time found in sessionStorage');
                 setHoldError('Chưa có booking được giữ chỗ. Vui lòng quay lại bước trước.');
             }
         } catch (error) {
-            console.error('❌ [PAYMENT V2] Error restoring held booking:', error);
+            logger.error('[PAYMENT V2] Error restoring held booking:', error);
             setHoldError('Lỗi khi khôi phục thông tin booking. Vui lòng quay lại bước trước.');
         }
     }, []);
@@ -264,14 +247,14 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Có lỗi xảy ra' }));
-                console.error('[PaymentV2] Error cancelling booking:', errorData);
+                logger.error('[PaymentV2] Error cancelling booking:', errorData);
                 toast.error('Không thể hủy đặt sân. Vui lòng thử lại.');
             } else {
-                console.log('[PaymentV2] ✅ Booking hold cancelled successfully');
+                logger.debug('[PaymentV2] Booking hold cancelled successfully');
                 toast.success('Đã hủy đặt sân thành công');
             }
         } catch (error) {
-            console.error('[PaymentV2] Error cancelling booking:', error);
+            logger.error('[PaymentV2] Error cancelling booking:', error);
             toast.error('Có lỗi xảy ra khi hủy đặt sân');
         } finally {
             setIsCancelling(false);
@@ -322,13 +305,13 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Có lỗi xảy ra' }));
-                console.error('[PaymentV2] Error cancelling booking on countdown expiry:', errorData);
+                logger.error('[PaymentV2] Error cancelling booking on countdown expiry:', errorData);
             } else {
-                console.log('[PaymentV2] ✅ Booking hold cancelled successfully');
+                logger.debug('[PaymentV2] Booking hold cancelled successfully');
             }
         } catch (error) {
             // Log error but continue with cleanup
-            console.error('[PaymentV2] Error cancelling booking on countdown expiry:', error);
+            logger.error('[PaymentV2] Error cancelling booking on countdown expiry:', error);
         }
 
         // Clear all sessionStorage (always run, even if API call fails)
@@ -368,24 +351,42 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
         return () => clearInterval(timer);
     }, [heldBookingId, countdown, handleCountdownExpired]);
 
-    const fetchBankAccount = async (fieldId: string) => {
-        setLoadingBankAccount(true);
+    // Handle PayOS payment initiation
+    const handlePayWithPayOS = async () => {
+        if (!heldBookingId) {
+            setPaymentError('Chưa có booking được giữ chỗ. Vui lòng quay lại bước trước.');
+            return;
+        }
+
+        setPaymentStatus('processing');
+        dispatch(clearError());
+
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/fields/${fieldId}/bank-account`);
-            if (response.ok) {
-                const result = await response.json();
-                // API returns { success: true, data: {...} } format
-                const bankAccountData = result?.data || result;
-                setBankAccount(bankAccountData);
-            } else {
-                console.error('Failed to fetch bank account:', response.status, response.statusText);
-                setBankAccount(null);
+            const token = sessionStorage.getItem('token');
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/${heldBookingId}/payment/payos`, {
+                method: 'POST',
+                headers,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Không thể tạo link thanh toán');
             }
-        } catch (error) {
-            console.error('Error fetching bank account:', error);
-            setBankAccount(null);
-        } finally {
-            setLoadingBankAccount(false);
+
+            const data = await response.json();
+            if (data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            } else {
+                throw new Error('Link thanh toán không tồn tại');
+            }
+
+        } catch (error: any) {
+            logger.error('PayOS Error:', error);
+            setPaymentError(error.message || 'Lỗi khi khởi tạo thanh toán PayOS');
+            setPaymentStatus('error');
         }
     };
 
@@ -413,42 +414,10 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
         });
     };
 
-    // Handle file selection
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        if (!allowedTypes.includes(file.type)) {
-            setPaymentError('Chỉ chấp nhận file ảnh (JPG, PNG, WEBP)');
-            return;
-        }
-
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.size > maxSize) {
-            setPaymentError('File không được vượt quá 5MB');
-            return;
-        }
-
-        setProofImage(file);
-        setPaymentError(null);
-
-        // Create preview
-        const preview = URL.createObjectURL(file);
-        setProofPreview(preview);
-    };
-
-    const handleRemoveImage = () => {
-        if (proofPreview) {
-            URL.revokeObjectURL(proofPreview);
-        }
-        setProofImage(null);
-        setProofPreview(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+    // Retry booking hold (if needed)
+    const handleRetryHold = () => {
+        setHoldError(null);
+        setHeldBookingId(null);
     };
 
     // Clear persisted booking-related local storage
@@ -460,8 +429,8 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
             sessionStorage.removeItem('heldBookingId');
             sessionStorage.removeItem('heldBookingCountdown');
             sessionStorage.removeItem('heldBookingTime');
-        } catch {
-            // ignore storage errors
+        } catch (error) {
+            logger.error('Error clearing booking local storage:', error);
         }
     };
 
@@ -470,127 +439,6 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    // Handle payment submission (submit proof for held booking)
-    const handlePayment = async () => {
-        if (!proofImage) {
-            setPaymentError('Vui lòng upload ảnh chứng minh thanh toán');
-            return;
-        }
-
-        // Booking should already be held from PersonalInfo step
-        if (!heldBookingId) {
-            setPaymentError('Chưa có booking được giữ chỗ. Vui lòng quay lại bước trước.');
-            return;
-        }
-
-        // Additional validation: ensure heldBookingId is a valid string
-        if (typeof heldBookingId !== 'string' || heldBookingId.trim() === '' || heldBookingId === 'undefined') {
-            console.error('[PaymentV2] Invalid heldBookingId:', heldBookingId);
-            setPaymentError('ID booking không hợp lệ. Vui lòng quay lại bước trước.');
-            return;
-        }
-
-        // Countdown chỉ là thông báo, không block submit
-        // User có thể submit payment proof ngay khi có heldBookingId
-        if (countdown <= 0) {
-            // Chỉ warning, không block - vẫn cho phép submit
-            console.warn('Countdown đã hết, nhưng vẫn cho phép submit payment proof');
-        }
-
-        setPaymentStatus('processing');
-        setPaymentError(null);
-        dispatch(clearError());
-
-        try {
-            console.log('[PaymentV2] Submitting payment proof for booking:', heldBookingId);
-
-            // Create FormData with payment proof
-            const formDataToSend = new FormData();
-            formDataToSend.append('paymentProof', proofImage);
-
-            // Optional auth token
-            const token = sessionStorage.getItem('token');
-            const headers: HeadersInit = {};
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            // Submit payment proof for existing booking
-            const url = `${import.meta.env.VITE_API_URL}/bookings/${heldBookingId}/submit-payment-proof`;
-            console.log('[PaymentV2] Submitting to URL:', url);
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers,
-                body: formDataToSend,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Có lỗi xảy ra' }));
-                console.error('[PaymentV2] Server error:', errorData);
-                throw new Error(errorData.message || 'Không thể gửi ảnh chứng minh. Vui lòng thử lại.');
-            }
-
-            const responseData = await response.json();
-            // API wraps response in {success: true, data: booking} format
-            const booking = responseData.data || responseData;
-            console.log('[PaymentV2] Payment proof submitted successfully:', booking);
-            setBookingId(booking._id || booking.id);
-
-            // Check for AI verification result
-            const isConfirmed = booking.status === 'confirmed';
-            const transaction = booking.transaction;
-            const isRejected = transaction?.paymentProofStatus === 'rejected';
-
-            if (isConfirmed) {
-                setVerificationResult({
-                    status: 'confirmed',
-                    isAiVerified: true
-                });
-            } else if (isRejected) {
-                setVerificationResult({
-                    status: 'rejected',
-                    reason: transaction?.paymentProofRejectionReason,
-                    isAiVerified: true
-                });
-            } else {
-                setVerificationResult({
-                    status: 'pending',
-                    isAiVerified: false
-                });
-            }
-
-            setPaymentStatus('success');
-
-            // Clear sessionStorage
-            clearBookingLocal();
-            sessionStorage.removeItem('heldBookingId');
-            sessionStorage.removeItem('heldBookingCountdown');
-            sessionStorage.removeItem('heldBookingTime');
-
-            // Clean up preview URL
-            if (proofPreview) {
-                URL.revokeObjectURL(proofPreview);
-            }
-
-            setTimeout(() => {
-                onPaymentComplete?.(formData);
-            }, 2000);
-        } catch (error: any) {
-            console.error('[PaymentV2] Error submitting payment proof:', error);
-            const errorMessage = error?.message || 'Không thể gửi ảnh chứng minh. Vui lòng thử lại.';
-            setPaymentError(errorMessage);
-            setPaymentStatus('error');
-        }
-    };
-
-    // Retry booking hold
-    const handleRetryHold = () => {
-        setHoldError(null);
-        setHeldBookingId(null);
-        // The useEffect will trigger again to create new hold
     };
 
     if (!venue) {
@@ -615,10 +463,10 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
                 <CardContent className="">
                     <div className="">
                         <h1 className="text-2xl font-semibold text-center text-[#1a1a1a] mb-1">
-                            Thanh toán & Xác nhận
+                            Xác nhận & Thanh toán
                         </h1>
                         <p className="text-base font-normal text-center text-[#6b7280]">
-                            Chuyển khoản vào tài khoản chủ sân và upload ảnh chứng minh.
+                            Kiểm tra thông tin và thanh toán qua PayOS để hoàn tất đặt sân.
                         </p>
                     </div>
                     {!isBookingDataValid && (
@@ -626,15 +474,14 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
                             Thiếu hoặc dữ liệu đặt sân không hợp lệ. Vui lòng quay lại và hoàn thành thông tin.
                         </div>
                     )}
-                    {/* Booking Hold Status - removed since hold happens in PersonalInfo step */}
                     {heldBookingId && countdown > 0 && (
                         <div className={`p-4 border rounded-lg mt-4 flex items-center justify-between ${countdown < 120
                             ? 'bg-red-50 border-red-200 text-red-800'
                             : 'bg-green-50 border-green-200 text-green-800'
                             }`}>
                             <div className="flex items-center gap-2">
-                                <CheckCircle className="w-5 h-5" />
-                                <span>Chỗ đã được giữ. Vui lòng upload ảnh chứng minh trong thời gian còn lại.</span>
+                                <Clock className="w-5 h-5" />
+                                <span>Chỗ đã được giữ. Vui lòng thanh toán trong thời gian còn lại.</span>
                             </div>
                             <div className={`font-bold text-lg ${countdown < 120 ? 'text-red-600' : 'text-green-600'
                                 }`}>
@@ -664,354 +511,145 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
 
             {/* Main Content */}
             <div className="flex flex-wrap gap-6">
-                {/* Payment Section */}
-                <div className="flex-1 min-w-[600px]">
-                    {paymentStatus === 'success' ? (
-                        <Card className={`border ${verificationResult?.status === 'confirmed'
-                            ? 'border-emerald-200 bg-emerald-50'
-                            : verificationResult?.status === 'rejected'
-                                ? 'border-red-200 bg-red-50'
-                                : 'border-amber-200 bg-amber-50'
-                            }`}>
-                            <CardContent className="p-8 text-center space-y-4">
-                                {verificationResult?.status === 'confirmed' ? (
-                                    <CheckCircle className="w-16 h-16 text-emerald-600 mx-auto" />
-                                ) : verificationResult?.status === 'rejected' ? (
-                                    <AlertCircle className="w-16 h-16 text-red-600 mx-auto" />
-                                ) : (
-                                    <Clock className="w-16 h-16 text-amber-600 mx-auto" />
-                                )}
-                                <div>
-                                    <h2 className={`text-2xl font-semibold ${verificationResult?.status === 'confirmed'
-                                        ? 'text-emerald-800'
-                                        : verificationResult?.status === 'rejected'
-                                            ? 'text-red-800'
-                                            : 'text-amber-800'
-                                        }`}>
-                                        {verificationResult?.status === 'confirmed'
-                                            ? 'Thanh toán thành công!'
-                                            : verificationResult?.status === 'rejected'
-                                                ? 'Thanh toán bị từ chối'
-                                                : 'Đã gửi yêu cầu đặt sân'}
-                                    </h2>
-                                    <p className={
-                                        verificationResult?.status === 'confirmed'
-                                            ? 'text-emerald-700'
-                                            : verificationResult?.status === 'rejected'
-                                                ? 'text-red-700'
-                                                : 'text-amber-700'
-                                    }>
-                                        {verificationResult?.status === 'confirmed'
-                                            ? 'Hệ thống AI đã xác nhận thanh toán của bạn thành công. Sân của bạn đã được đặt.'
-                                            : verificationResult?.status === 'rejected'
-                                                ? `AI không thể xác nhận thanh toán: ${verificationResult.reason || 'Vui lòng kiểm tra lại ảnh biên lai.'}`
-                                                : 'Đơn đặt đang chờ chủ sân xác minh thanh toán thủ công. Email xác nhận sẽ được gửi khi chủ sân duyệt.'}
-                                    </p>
+                {/* Payment Detail Section */}
+                <div className="flex-1 min-w-[350px]">
+                    <Card className="border border-gray-200 h-full">
+                        <CardHeader className="border-b border-gray-200 pb-4">
+                            <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                                <Wallet className="w-5 h-5 text-emerald-600" />
+                                Phương thức thanh toán
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6">
+                            <div className="p-4 border border-emerald-200 bg-emerald-50 rounded-lg">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="font-bold text-lg text-emerald-800">PayOS</div>
                                 </div>
-
-                                {verificationResult?.status !== 'confirmed' && (
-                                    <div className={`p-4 rounded-lg border text-sm ${verificationResult?.status === 'rejected'
-                                        ? 'bg-red-100 border-red-200 text-red-800'
-                                        : 'bg-amber-100 border-amber-200 text-amber-800'
-                                        }`}>
-                                        {verificationResult?.status === 'rejected' ? (
-                                            <>
-                                                <p className="font-semibold">Lý do từ chối:</p>
-                                                <p>{verificationResult.reason}</p>
-                                            </>
-                                        ) : (
-                                            <p>Bạn đã gửi ảnh chứng minh. Nếu bạn nhận ra mình đã gửi nhầm ảnh, bạn có thể thay thế bằng ảnh khác.</p>
-                                        )}
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className={`mt-2 ${verificationResult?.status === 'rejected'
-                                                ? 'border-red-300 text-red-800 hover:bg-red-200'
-                                                : 'border-amber-300 text-amber-800 hover:bg-amber-200'
-                                                }`}
-                                            onClick={() => setPaymentStatus('idle')}
-                                        >
-                                            Thay thế bằng ảnh khác
-                                        </Button>
-                                    </div>
-                                )}
-
-                                <Badge variant="secondary" className={
-                                    verificationResult?.status === 'confirmed'
-                                        ? 'bg-emerald-100 text-emerald-800'
-                                        : verificationResult?.status === 'rejected'
-                                            ? 'bg-red-100 text-red-800'
-                                            : 'bg-amber-100 text-amber-800'
-                                }>
-                                    Mã đặt sân: #{bookingId || 'N/A'}
-                                </Badge>
-
-                                <div className={`grid md:grid-cols-3 gap-3 text-sm border rounded-lg p-4 ${verificationResult?.status === 'confirmed'
-                                    ? 'text-emerald-900 bg-white/60 border-emerald-100'
-                                    : verificationResult?.status === 'rejected'
-                                        ? 'text-red-900 bg-white/60 border-red-100'
-                                        : 'text-amber-900 bg-white/60 border-amber-100'
-                                    }`}>
-                                    <div className="text-left md:text-center">
-                                        <p className="font-semibold">Họ tên</p>
-                                        <p className={
-                                            verificationResult?.status === 'confirmed'
-                                                ? 'text-emerald-700'
-                                                : verificationResult?.status === 'rejected'
-                                                    ? 'text-red-700'
-                                                    : 'text-amber-700'
-                                        }>{formData.name || user?.fullName || 'Khách'}</p>
-                                    </div>
-                                    <div className="text-left md:text-center">
-                                        <p className="font-semibold">Email nhận thông báo</p>
-                                        <p className={
-                                            verificationResult?.status === 'confirmed'
-                                                ? 'text-emerald-700'
-                                                : verificationResult?.status === 'rejected'
-                                                    ? 'text-red-700'
-                                                    : 'text-amber-700'
-                                        }>{formData.email || (user as any)?.email || '—'}</p>
-                                    </div>
-                                    <div className="text-left md:text-center">
-                                        <p className="font-semibold">Số điện thoại</p>
-                                        <p className={
-                                            verificationResult?.status === 'confirmed'
-                                                ? 'text-emerald-700'
-                                                : verificationResult?.status === 'rejected'
-                                                    ? 'text-red-700'
-                                                    : 'text-amber-700'
-                                        }>{formData.phone || (user as any)?.phone || '—'}</p>
-                                    </div>
-                                </div>
-
-                                <p className={`text-xs ${verificationResult?.status === 'confirmed'
-                                    ? 'text-emerald-700'
-                                    : verificationResult?.status === 'rejected'
-                                        ? 'text-red-700'
-                                        : 'text-amber-700'
-                                    }`}>
-                                    Lưu ý: Email được gửi ngay sau khi đặt, qua hàng đợi nền; nếu không thấy, hãy kiểm tra hộp thư spam.
+                                <p className="text-sm text-emerald-700">
+                                    Thanh toán an toàn, nhanh chóng qua QR Code ứng dụng ngân hàng.
                                 </p>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <Card className="border border-gray-200">
-                            <CardHeader className="border-b border-gray-200">
-                                <CardTitle className="text-2xl font-semibold flex items-center gap-2">
-                                    <Wallet className="w-6 h-6" />
-                                    Thông tin chuyển khoản
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6 space-y-6">
-                                {/* Bank Account Info */}
-                                {loadingBankAccount ? (
-                                    <div className="flex items-center justify-center p-8">
-                                        <Loading size={24} className="text-gray-400" />
-                                        <span className="ml-2 text-gray-600">Đang tải thông tin tài khoản...</span>
-                                    </div>
-                                ) : bankAccount ? (
-                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-                                        <h3 className="font-semibold text-blue-900">Thông tin tài khoản ngân hàng chủ sân:</h3>
-                                        <div className="space-y-2 text-sm">
-                                            <div><span className="font-medium">Chủ tài khoản:</span> {bankAccount.accountName}</div>
-                                            <div><span className="font-medium">Số tài khoản:</span> {bankAccount.accountNumber}</div>
-                                            <div><span className="font-medium">Ngân hàng:</span> {bankAccount.bankName}</div>
-                                            {bankAccount.branch && (
-                                                <div><span className="font-medium">Chi nhánh:</span> {bankAccount.branch}</div>
-                                            )}
-                                        </div>
-                                        <div className="pt-2 border-t border-blue-300">
-                                            <div className="text-lg font-bold text-blue-900">
-                                                Số tiền cần chuyển: {formatVND(calculateTotal())}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                        <AlertCircle className="w-5 h-5 text-yellow-700 inline mr-2" />
-                                        <span className="text-yellow-800">Không thể tải thông tin tài khoản ngân hàng. Vui lòng thử lại sau.</span>
-                                    </div>
-                                )}
+                            </div>
 
-                                {/* Payment Proof Upload */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700">
-                                        Ảnh chứng minh thanh toán <span className="text-red-500">*</span>
-                                    </label>
-                                    {proofPreview ? (
-                                        <div className="relative border-2 border-gray-200 rounded-lg p-4">
-                                            <img
-                                                src={proofPreview}
-                                                alt="Payment proof preview"
-                                                className="w-full h-auto max-h-96 object-contain rounded"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="absolute top-2 right-2"
-                                                onClick={handleRemoveImage}
-                                            >
-                                                <X className="w-4 h-4 mr-1" />
-                                                Xóa
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center space-y-4 hover:border-primary transition-colors">
-                                            <div className="flex flex-col items-center space-y-2">
-                                                <Upload className="w-10 h-10 text-gray-400" />
-                                                <div className="space-y-1">
-                                                    <p className="text-sm font-medium text-gray-700">Chọn ảnh chứng minh thanh toán</p>
-                                                    <p className="text-xs text-gray-500">Hỗ trợ: JPG, PNG, WEBP (tối đa 5MB)</p>
-                                                </div>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => fileInputRef.current?.click()}
-                                            >
-                                                <ImageIcon className="w-4 h-4 mr-2" />
-                                                Chọn ảnh
-                                            </Button>
-                                        </div>
-                                    )}
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                                        className="hidden"
-                                        onChange={handleFileSelect}
-                                    />
+                            {paymentError && (
+                                <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm border border-red-200">
+                                    <AlertCircle className="w-4 h-4 inline mr-2" />
+                                    {paymentError}
                                 </div>
+                            )}
 
-                                {/* Error Message */}
-                                {paymentError && (
-                                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
-                                        <AlertCircle className="w-5 h-5 inline mr-2" />
-                                        {paymentError}
-                                    </div>
-                                )}
-
-                                {/* Submit Button */}
+                            <div className="space-y-3 pt-4">
                                 <Button
-                                    onClick={handlePayment}
-                                    disabled={
-                                        !isBookingDataValid ||
-                                        !proofImage ||
-                                        paymentStatus === 'processing' ||
-                                        !!holdError
-                                    }
-                                    className="w-full"
-                                    size="lg"
+                                    className="w-full h-12 text-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 font-semibold"
+                                    onClick={handlePayWithPayOS}
+                                    disabled={paymentStatus === 'processing' || !heldBookingId || countdown <= 0}
                                 >
                                     {paymentStatus === 'processing' ? (
                                         <>
-                                            <Loading size={16} className="mr-2" />
+                                            <Loading className="mr-2 h-5 w-5 text-white" />
                                             Đang xử lý...
                                         </>
-                                    ) : !proofImage ? (
-                                        <>
-                                            <Upload className="w-4 h-4 mr-2" />
-                                            Vui lòng upload ảnh chứng minh
-                                        </>
                                     ) : (
-                                        <>
-                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                            Xác nhận thanh toán
-                                        </>
+                                        <>Thanh toán {formatVND(calculateTotal())}</>
                                     )}
                                 </Button>
-                            </CardContent>
-                        </Card>
-                    )}
+
+                                <Button
+                                    variant="outline"
+                                    className="w-full h-12 text-gray-600 border-gray-300 hover:bg-gray-50"
+                                    onClick={handleBackClick}
+                                    disabled={paymentStatus === 'processing'}
+                                >
+                                    Quay lại
+                                </Button>
+
+                                <p className="text-xs text-center text-gray-400 mt-4">
+                                    Bằng việc thanh toán, bạn đồng ý với điều khoản đặt sân.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                {/* Order Summary */}
-                <div className="w-full md:w-80">
+                {/* Booking Summary Sidebar */}
+                <div className="w-full lg:w-[400px]">
                     <Card className="border border-gray-200 sticky top-4">
-                        <CardHeader className="border-b border-gray-200">
-                            <CardTitle className="text-lg font-semibold">Tóm tắt đơn đặt</CardTitle>
+                        <CardHeader className="bg-gray-50 border-b border-gray-200 pb-4">
+                            <CardTitle className="text-lg font-semibold text-gray-800">
+                                Thông tin đặt sân
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
-                            <div className="space-y-3">
-                                <div>
-                                    <p className="text-sm text-gray-600">Sân</p>
-                                    <p className="font-medium">{venue.name}</p>
+                            <div>
+                                <h3 className="font-medium text-gray-900">{venue.name}</h3>
+                                <p className="text-sm text-gray-500">{venue.location}</p>
+                            </div>
+                            <div className="space-y-3 pt-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Sân bóng</span>
+                                    <span className="font-medium">{formData.courtName || "Sân thường"}</span>
                                 </div>
-                                {formData.courtName && (
-                                    <div>
-                                        <p className="text-sm text-gray-600">Sân con (court)</p>
-                                        <p className="font-medium">{formData.courtName}</p>
-                                    </div>
-                                )}
-                                <div>
-                                    <p className="text-sm text-gray-600">Ngày</p>
-                                    <p className="font-medium">{formatDate(formData.date)}</p>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Ngày</span>
+                                    <span className="font-medium">{formatDate(formData.date)}</span>
                                 </div>
-                                <div>
-                                    <p className="text-sm text-gray-600">Thời gian</p>
-                                    <p className="font-medium">
-                                        {formatTime(formData.startTime)} - {formatTime(formData.endTime)}
-                                    </p>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Giờ</span>
+                                    <span className="font-medium">{formatTime(formData.startTime)} - {formatTime(formData.endTime)}</span>
                                 </div>
-                                <div>
-                                    <p className="text-sm text-gray-600">Thời lượng</p>
-                                    <p className="font-medium">{calculateDuration()} giờ</p>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Thời lượng</span>
+                                    <span className="font-medium">{calculateDuration()} giờ</span>
                                 </div>
                             </div>
 
-                            <div className="border-t border-gray-200 pt-4 space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Giá sân ({calculateDuration()}h)</span>
-                                    <span>{formatVND((venue.basePrice || 0) * calculateDuration())}</span>
+                            <hr className="border-gray-100" />
+
+                            {/* Price Breakdown */}
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Giá sân</span>
+                                    <span>{formatVND(calculateTotal() - calculateSystemFee() - calculateAmenitiesTotal())}</span>
                                 </div>
                                 {calculateAmenitiesTotal() > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">Tiện ích</span>
-                                        <span>{formatVND(calculateAmenitiesTotal())}</span>
+                                    <div className="flex justify-between text-blue-600">
+                                        <span>Tiện ích thêm</span>
+                                        <span>+{formatVND(calculateAmenitiesTotal())}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Phí dịch vụ (5%)</span>
+                                <div className="flex justify-between text-gray-500">
+                                    <span>Phí dịch vụ (5%)</span>
                                     <span>{formatVND(calculateSystemFee())}</span>
                                 </div>
-                                <div className="flex justify-between font-semibold text-lg pt-2 border-t border-gray-200">
-                                    <span>Tổng cộng</span>
-                                    <span>{formatVND(calculateTotal())}</span>
-                                </div>
+                            </div>
+
+                            <hr className="border-dashed border-gray-300" />
+
+                            <div className="flex justify-between items-center">
+                                <span className="font-semibold text-gray-900">Tổng cộng</span>
+                                <span className="text-xl font-bold text-emerald-600">{formatVND(calculateTotal())}</span>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
             </div>
 
-            {/* Back Button */}
-            {paymentStatus !== 'success' && (
-                <div className="flex justify-start">
-                    <Button variant="outline" onClick={handleBackClick} disabled={isCancelling}>
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        {isCancelling ? 'Đang hủy...' : 'Quay lại'}
-                    </Button>
-                </div>
-            )}
-
-            {/* Cancel Booking Confirmation Dialog */}
+            {/* Cancel Confirmation Dialog */}
             <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Xác nhận hủy đặt sân</AlertDialogTitle>
+                        <AlertDialogTitle>Hủy giữ chỗ?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Bạn có chắc chắn muốn quay lại? Nếu bạn quay lại, đặt sân của bạn sẽ tự động bị hủy.
+                            Bạn đang có booking được giữ chỗ. Nếu quay lại, booking sẽ bị hủy và bạn có thể mất slot này.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isCancelling}>Không</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isCancelling}>Đóng</AlertDialogCancel>
                         <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700 text-white"
                             onClick={handleCancelBooking}
                             disabled={isCancelling}
-                            className="bg-red-600 hover:bg-red-700"
                         >
-                            {isCancelling ? 'Đang hủy...' : 'Có, hủy đặt sân'}
+                            {isCancelling ? 'Đang hủy...' : 'Hủy giữ chỗ & Quay lại'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1019,4 +657,3 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
         </div>
     );
 };
-

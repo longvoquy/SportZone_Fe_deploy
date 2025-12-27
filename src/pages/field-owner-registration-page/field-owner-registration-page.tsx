@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import logger from "@/utils/logger"
 import { Button } from "@/components/ui/button"
 
 type RegistrationStep = 1 | 2 | 3 | 4
@@ -184,7 +185,7 @@ export default function FieldOwnerRegistrationPage() {
       CustomSuccessToast("Đăng ký thành công! Chúng tôi sẽ xem xét trong vòng 1-3 ngày.")
       navigate("/field-owner-registration-status")
     } catch (error: any) {
-      console.error('Registration error:', error)
+      logger.error('Registration error:', error)
       CustomFailedToast(error.message || "Đăng ký thất bại")
     }
   }

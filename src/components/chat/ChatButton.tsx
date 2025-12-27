@@ -5,6 +5,7 @@ import { useAppSelector, useAppDispatch } from "@/store/hook";
 import { getUnreadCount } from "@/features/chat/chatThunk";
 import { webSocketService } from "@/features/chat/websocket.service";
 import ChatWindow from "./ChatWindow";
+import logger from "@/utils/logger";
 
 // Create a ref to control ChatButton from outside
 export interface ChatButtonRef {
@@ -21,7 +22,7 @@ const ChatButton = forwardRef<ChatButtonRef>((_props, ref) => {
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
     openChat: () => {
-      console.log("ChatButton: Opening chat via external trigger");
+      logger.debug("ChatButton: Opening chat via external trigger");
       setIsOpen(true);
     },
     closeChat: () => {

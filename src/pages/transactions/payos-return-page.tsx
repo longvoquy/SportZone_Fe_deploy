@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Loading } from '@/components/ui/loading';
+import logger from '@/utils/logger';
 
 /**
  * PayOS Return Page
@@ -29,14 +30,14 @@ export default function PayOSReturnPage() {
   useEffect(() => {
     const verifyPayment = async () => {
       try {
-        console.log('[PayOS Return] Starting payment verification...');
-        console.log('[PayOS Return] Full URL:', window.location.href);
-        console.log('[PayOS Return] Location search:', location.search);
+        logger.debug('[PayOS Return] Starting verification...', {
+          url: window.location.href,
+          search: location.search
+        });
 
         // Get complete query string from PayOS redirect
         const rawQueryString = location.search || window.location.search || '';
-
-        console.log('[PayOS Return] Raw query string:', rawQueryString);
+        logger.debug('[PayOS Return] Raw query string:', rawQueryString);
 
         // Parse query params according to guide
         // Guide endpoint: GET /transactions/payos/return?orderCode=123456789
@@ -46,15 +47,14 @@ export default function PayOSReturnPage() {
         const orderCodeParam = queryParams.get('orderCode');
         const statusParam = queryParams.get('status');
 
-        console.log('[PayOS Return] PayOS params:', {
+        logger.debug('[PayOS Return] PayOS params:', {
           orderCode: orderCodeParam,
-          status: statusParam,
-          fullQuery: rawQueryString,
+          status: statusParam
         });
 
         // Validate orderCode according to guide
         if (!orderCodeParam) {
-          console.error('[PayOS Return] ❌ No orderCode in URL');
+          logger.error('[PayOS Return] ❌ No orderCode in URL');
           setError('Không tìm thấy mã đơn hàng (orderCode). Vui lòng liên hệ admin.');
           setStatus('error');
           return;
@@ -63,7 +63,7 @@ export default function PayOSReturnPage() {
         // Validate orderCode is a number (as per guide)
         const orderCodeNumber = Number(orderCodeParam);
         if (!Number.isFinite(orderCodeNumber) || orderCodeNumber <= 0) {
-          console.error('[PayOS Return] ❌ Invalid orderCode format:', orderCodeParam);
+          logger.error('[PayOS Return] ❌ Invalid orderCode format:', orderCodeParam);
           setError('Mã đơn hàng không hợp lệ.');
           setStatus('error');
           return;
@@ -73,14 +73,11 @@ export default function PayOSReturnPage() {
 
         // Call verify endpoint according to guide: GET /transactions/payos/return?orderCode=...
         // The backend should handle the query string properly
-        console.log('[PayOS Return] ✅ Calling verify API with orderCode:', orderCodeNumber);
-        console.log('[PayOS Return] Query string:', rawQueryString);
-
         const result = await dispatch(
           verifyPayOSPayment(rawQueryString)
         ).unwrap();
 
-        console.log('[PayOS Return] ✅ Verification result:', result);
+        logger.debug('[PayOS Return] ✅ Success:', result);
 
         // Check if payment succeeded based on status from query params
         const derivedStatus = statusParam ? statusParam.toUpperCase() : '';
@@ -90,8 +87,7 @@ export default function PayOSReturnPage() {
           result.paymentStatus === 'succeeded';
 
         if (isSucceeded && result.success) {
-          // Payment successful
-          console.log('[PayOS Return] ✅ PayOS payment successful!');
+          logger.debug('[PayOS Return] ✅ PayOS payment successful!');
 
           setAmount(result.amount);
           setBookingId(result.bookingId || null);
@@ -107,8 +103,7 @@ export default function PayOSReturnPage() {
             });
           }, 2000);
         } else {
-          // Payment failed
-          console.log('[PayOS Return] ❌ PayOS payment failed');
+          logger.debug('[PayOS Return] ❌ PayOS payment failed');
 
           const errorMessage =
             result.reason ||
@@ -128,7 +123,7 @@ export default function PayOSReturnPage() {
           }, 3000);
         }
       } catch (error: any) {
-        console.error('[PayOS Return] ❌ Verification error:', error);
+        logger.error('[PayOS Return] ❌ Error:', error);
         setError(error.message || 'Có lỗi xảy ra khi xác thực thanh toán');
         setStatus('error');
 

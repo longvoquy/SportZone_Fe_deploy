@@ -18,6 +18,7 @@ import type {
 } from "../../types/booking-type";
 import axiosPrivate from "../../utils/axios/axiosPrivate";
 import axiosPublic from "../../utils/axios/axiosPublic";
+import logger from "../../utils/logger";
 import {
     CREATE_FIELD_BOOKING_API,
     CANCEL_FIELD_BOOKING_API,
@@ -77,7 +78,7 @@ export const getMyInvoices = createAsyncThunk<
             pagination: null,
         };
     } catch (error: any) {
-        console.error("Error getting my invoices:", error);
+        logger.error("Error getting my invoices:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to get my invoices",
             status: error.response?.status?.toString() || "500",
@@ -101,7 +102,7 @@ export const createFieldBooking = createAsyncThunk<
 
         return response.data;
     } catch (error: any) {
-        console.error("Error creating field booking:", error);
+        logger.error("Error creating field booking:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to create field booking",
             status: error.response?.status?.toString() || "500",
@@ -125,7 +126,7 @@ export const cancelFieldBooking = createAsyncThunk<
 
         return response.data;
     } catch (error: any) {
-        console.error("Error cancelling field booking:", error);
+        logger.error("Error cancelling field booking:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to cancel field booking",
             status: error.response?.status?.toString() || "500",
@@ -149,7 +150,7 @@ export const createSessionBooking = createAsyncThunk<
 
         return response.data;
     } catch (error: any) {
-        console.error("Error creating session booking:", error);
+        logger.error("Error creating session booking:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to create session booking",
             status: error.response?.status?.toString() || "500",
@@ -173,7 +174,7 @@ export const cancelSessionBooking = createAsyncThunk<
 
         return response.data;
     } catch (error: any) {
-        console.error("Error cancelling session booking:", error);
+        logger.error("Error cancelling session booking:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to cancel session booking",
             status: error.response?.status?.toString() || "500",
@@ -197,7 +198,7 @@ export const createCombinedBooking = createAsyncThunk<
 
         return response.data;
     } catch (error: any) {
-        console.error("Error creating combined booking:", error);
+        logger.error("Error creating combined booking:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to create combined booking",
             status: error.response?.status?.toString() || "500",
@@ -221,7 +222,7 @@ export const getCoachBookings = createAsyncThunk<
 
         return response.data;
     } catch (error: any) {
-        console.error("Error getting coach bookings:", error);
+        logger.error("Error getting coach bookings:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to get coach bookings",
             status: error.response?.status?.toString() || "500",
@@ -292,7 +293,7 @@ export const getMyBookings = createAsyncThunk<
             pagination: null
         };
     } catch (error: any) {
-        console.error("Error getting my bookings:", error);
+        logger.error("Error getting my bookings:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to get my bookings",
             status: error.response?.status?.toString() || "500",
@@ -317,7 +318,7 @@ export const getCoachSchedule = createAsyncThunk<
 
         return response.data;
     } catch (error: any) {
-        console.error("Error getting coach schedule:", error);
+        logger.error("Error getting coach schedule:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to get coach schedule",
             status: error.response?.status?.toString() || "500",
@@ -341,7 +342,7 @@ export const setCoachHoliday = createAsyncThunk<
 
         return response.data;
     } catch (error: any) {
-        console.error("Error setting coach holiday:", error);
+        logger.error("Error setting coach holiday:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to set coach holiday",
             status: error.response?.status?.toString() || "500",
@@ -373,7 +374,7 @@ export const getUpcomingBooking = createAsyncThunk<
 
         return null;
     } catch (error: any) {
-        console.error("Error getting upcoming booking:", error);
+        logger.error("Error getting upcoming booking:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to get upcoming booking",
             status: error.response?.status?.toString() || "500",
@@ -415,7 +416,7 @@ export const createCoachBookingV2 = createAsyncThunk<
 
         return booking;
     } catch (error: any) {
-        console.error("Error creating coach booking V2:", error);
+        logger.error("Error creating coach booking V2:", error);
         const errorResponse: ErrorResponse = {
             message: error?.message || "Failed to create coach booking",
             status: error?.response?.status?.toString() || "500",
@@ -446,7 +447,7 @@ export const getCoachBankAccount = createAsyncThunk<
 
         return bankAccount;
     } catch (error: any) {
-        console.error("Error getting coach bank account:", error);
+        logger.error("Error getting coach bank account:", error);
         const errorResponse: ErrorResponse = {
             message: error?.message || "Failed to get coach bank account",
             status: error?.response?.status?.toString() || "500",
@@ -477,7 +478,7 @@ export const getCoachAvailableSlots = createAsyncThunk<
 
         return slots;
     } catch (error: any) {
-        console.error("Error getting coach available slots:", error);
+        logger.error("Error getting coach available slots:", error);
         const errorResponse: ErrorResponse = {
             message: error?.message || "Failed to get coach available slots",
             status: error?.response?.status?.toString() || "500",

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import logger from '@/utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAppDispatch, useAppSelector } from '@/store/hook';
@@ -108,9 +109,11 @@ export default function FieldEditPage() {
     // Populate form when field data is loaded
     useEffect(() => {
         if (currentField && currentField.id === fieldId) {
-            console.log("DEBUG: field-edit-page currentField:", currentField);
-            console.log("DEBUG: field-edit-page courts:", currentField.courts);
-            console.log("DEBUG: field-edit-page courts length:", currentField.courts?.length);
+            logger.debug("field-edit-page currentField loaded", {
+                id: currentField.id,
+                name: currentField.name,
+                courtsCount: currentField.courts?.length
+            });
             // Extract location data
             const location = currentField.location as any;
             let address = '';
@@ -539,7 +542,7 @@ export default function FieldEditPage() {
             setPendingNewCourts(0);
             dispatch(getFieldById(fieldId));
         } catch (error) {
-            console.error('Error updating field:', error);
+            logger.error('Error updating field:', error);
             CustomFailedToast('Cập nhật sân thất bại. Vui lòng thử lại.');
         }
     };

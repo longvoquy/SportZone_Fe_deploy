@@ -2,6 +2,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import logger from "@/utils/logger";
 import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import L from "leaflet";
@@ -61,28 +62,24 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
       setFavLoading(true);
       if (isFavourite) {
         const payload = { favouriteCoaches: [effectiveCoachId as string] };
-        console.log('Removing favourite coaches payload:', payload);
         const action: any = await dispatch(removeFavouriteCoaches(payload));
-        console.log('removeFavouriteCoaches action:', action);
         if (action?.meta?.requestStatus === "fulfilled") {
           CustomSuccessToast("Đã bỏ yêu thích");
         } else {
           const pl = action?.payload;
           const message = typeof pl === 'string' ? pl : pl?.message ?? (pl ? JSON.stringify(pl) : "Bỏ yêu thích thất bại");
-          console.error('Remove favourite failed:', pl || action?.error);
+          logger.error('Remove favourite failed', { payload: pl, error: action?.error });
           CustomFailedToast(message);
         }
       } else {
         const payload = { favouriteCoaches: [effectiveCoachId as string] };
-        console.log('Setting favourite coaches payload:', payload);
         const action: any = await dispatch(setFavouriteCoaches(payload));
-        console.log('setFavouriteCoaches action:', action);
         if (action?.meta?.requestStatus === "fulfilled") {
           CustomSuccessToast("Đã thêm vào yêu thích");
         } else {
           const pl = action?.payload;
           const message = typeof pl === 'string' ? pl : pl?.message ?? (pl ? JSON.stringify(pl) : "Thêm yêu thích thất bại");
-          console.error('Set favourite failed:', pl || action?.error);
+          logger.error('Set favourite failed', { payload: pl, error: action?.error });
           CustomFailedToast(message);
         }
       }
@@ -94,7 +91,7 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
         // refresh profile to sync favouriteCoaches state with server
         dispatch(getUserProfile());
       } catch (err: any) {
-        console.error('Failed to refresh profile', err);
+        logger.error('Failed to refresh profile', err);
       }
     }
   };
@@ -149,7 +146,7 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
       try {
         dispatch(getCoachStatsThunk(effectiveCoachId));
       } catch (e) {
-        console.error('Failed to dispatch getCoachStatsThunk', e);
+        logger.error('Failed to dispatch getCoachStatsThunk', e);
       }
     }
   }, [dispatch, effectiveCoachId]);
@@ -180,9 +177,7 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
       if (!effectiveCoachId) return;
       try {
         setReviewsLoading(true);
-        console.log('fetchReviews called', { effectiveCoachId, page, limit: REVIEW_PAGE_LIMIT });
         const resp = await getReviewsForCoachAPI(effectiveCoachId, page, REVIEW_PAGE_LIMIT);
-        console.log('fetchReviews response', { effectiveCoachId, page, resp });
 
         // Normalize possible API shapes:
         // 1) { data: [...], pagination: { ... } }
@@ -202,15 +197,13 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
         const pageFromResp = body?.pagination?.page ?? resp?.pagination?.page ?? page;
         const totalPagesFromResp = body?.pagination?.totalPages ?? resp?.pagination?.totalPages ?? 1;
 
-        console.log('fetchReviews normalized', { itemsLength: items.length, pageFromResp, totalPagesFromResp });
-
         if (append) setCoachReviews((prev) => [...prev, ...items]);
         else setCoachReviews(items);
 
         setReviewsPage(pageFromResp ?? page);
         setReviewsTotalPages(totalPagesFromResp ?? 1);
       } catch (err) {
-        console.error('Failed to load coach reviews', err);
+        logger.error('Failed to load coach reviews', err);
       } finally {
         setReviewsLoading(false);
       }
@@ -436,7 +429,7 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
           if (mounted) setSimilarCoachesState(mapped);
         }
       } catch (err) {
-        console.error('Failed to fetch similar coaches', err);
+        logger.error('Failed to fetch similar coaches', err);
       }
     };
 
@@ -622,7 +615,7 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
                 try {
                   await fetchReviews(1, false);
                 } catch (err) {
-                  console.error('Failed to refresh reviews after submit', err);
+                  logger.error('Failed to refresh reviews after submit', err);
                 }
                 try {
                   if (effectiveCoachId) {
@@ -631,7 +624,7 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
                     await dispatch(getCoachStatsThunk(effectiveCoachId));
                   }
                 } catch (err) {
-                  console.error('Failed to refresh coach stats after submit', err);
+                  logger.error('Failed to refresh coach stats after submit', err);
                 }
               } else {
                 const errData = action?.payload || {};

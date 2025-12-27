@@ -60,6 +60,7 @@ export const removeFavouriteSport = createAsyncThunk<
 });
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axiosPrivate from "../../utils/axios/axiosPrivate";
+import logger from "@/utils/logger";
 import {
     GET_PROFILE_API,
     UPDATE_PROFILE_API,
@@ -203,7 +204,7 @@ export const setFavouriteFields = createAsyncThunk<
         // Handle different response structures
         return response.data.data || response.data;
     } catch (error: any) {
-        console.error("setFavouriteFields API error:", error.response?.data || error.message);
+        logger.error("setFavouriteFields API error:", error.response?.data || error.message);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to set favourite fields",
             status: error.response?.status || "500",
@@ -228,7 +229,7 @@ export const removeFavouriteFields = createAsyncThunk<
         // Handle different response structures
         return response.data.data || response.data;
     } catch (error: any) {
-        console.error("removeFavouriteFields API error:", error.response?.data || error.message);
+        logger.error("removeFavouriteFields API error:", error.response?.data || error.message);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to remove favourite fields",
             status: error.response?.status || "500",

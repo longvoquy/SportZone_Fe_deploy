@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axiosPublic from '../../utils/axios/axiosPublic';
 import axiosPrivate from '../../utils/axios/axiosPrivate';
+import logger from '../../utils/logger';
 import {
   TOURNAMENTS_API,
   TOURNAMENT_BY_ID_API,
@@ -34,11 +35,9 @@ import {
 
 
 const mapApiTournamentToAppTournament = (apiTournament: any): import("./tournamentSlice").Tournament | null => {
-  console.log('Raw API tournament data:', apiTournament); // Debug log
-
   // Check if apiTournament is null or undefined
   if (!apiTournament) {
-    console.error('apiTournament is null or undefined');
+    logger.error('apiTournament is null or undefined');
     return null;
   }
 
@@ -48,14 +47,6 @@ const mapApiTournamentToAppTournament = (apiTournament: any): import("./tourname
       apiTournament.tournamentDate.split('T')[0] :
       apiTournament.tournamentDate?.toISOString?.()?.split('T')[0] || "") : "";
 
-  // Debug: Check the actual values
-  console.log('Extracted values:', {
-    maxParticipants: apiTournament?.maxParticipants,
-
-    numberOfTeams: apiTournament?.numberOfTeams,
-    teamSize: apiTournament?.teamSize,
-    participants: apiTournament?.participants
-  });
 
   // Calculate current teams based on participants and team size
   const teamSize = apiTournament?.teamSize || 1;
@@ -129,11 +120,7 @@ export const fetchTournaments = createAsyncThunk(
       const queryString = buildTournamentsQuery(filters);
       const url = queryString ? `${TOURNAMENTS_API}?${queryString}` : TOURNAMENTS_API;
 
-      console.log('Fetching tournaments from:', url);
-
       const response = await axiosPublic.get(url);
-      console.log('API Response:', response);
-      console.log('Response data structure:', response.data);
 
       // Handle different API response structures
       let tournaments: any[] = [];
@@ -148,17 +135,15 @@ export const fetchTournaments = createAsyncThunk(
         tournaments = response.data.tournaments;
       }
 
-      console.log('Extracted tournaments:', tournaments);
 
       const mappedTournaments = tournaments.map(mapApiTournamentToAppTournament);
-      console.log('Mapped tournaments:', mappedTournaments);
 
       const validTournaments = mappedTournaments.filter((t): t is import("./tournamentSlice").Tournament => t !== null);
 
       dispatch(setTournaments(validTournaments));
       return validTournaments;
     } catch (error: any) {
-      console.error('Error fetching tournaments:', error);
+      logger.error('Error fetching tournaments:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch tournaments';
       dispatch(setError(errorMsg));
       return rejectWithValue(errorMsg);
@@ -176,20 +161,14 @@ export const fetchTournamentById = createAsyncThunk(
 
     try {
       const response = await axiosPublic.get(TOURNAMENT_BY_ID_API(id));
-      console.log('API response for tournament:', response.data); // Add this line for debugging
-
-      // Make sure we're passing the correct data structure
       const tournamentData = response.data.data || response.data;
-      console.log('Extracted tournament data:', tournamentData); // Debug log
-
       const mappedTournament = mapApiTournamentToAppTournament(tournamentData);
-      console.log('Mapped tournament:', mappedTournament); // Debug log
 
       dispatch(setCurrentTournament(mappedTournament));
       return mappedTournament;
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || 'Failed to fetch tournament';
-      console.error('Error fetching tournament:', error); // Add detailed error logging
+      logger.error('Error fetching tournament:', error);
       dispatch(setError(errorMsg));
       return rejectWithValue(errorMsg);
     } finally {
@@ -212,7 +191,6 @@ export const fetchAvailableFields = createAsyncThunk(
       // Extract fields from the response structure
       const fields = response.data.data || response.data || [];
 
-      console.log('Extracted fields:', fields);
       dispatch(setAvailableFields(fields));
       return fields;
     } catch (error: any) {
@@ -308,7 +286,6 @@ export const fetchAvailableCourts = createAsyncThunk(
       // Extract courts from the response structure
       const courts = response.data.data || response.data || [];
 
-      console.log('Extracted courts:', courts);
       dispatch(setAvailableCourts(courts));
       return courts;
     } catch (error: any) {
@@ -331,7 +308,6 @@ export const fetchMyTournaments = createAsyncThunk(
 
     try {
       const response = await axiosPrivate.get(MY_TOURNAMENTS_API);
-      console.log('My tournaments response:', response.data);
 
       // Map API response to app format
       const tournaments = response.data.data || response.data || [];
@@ -341,7 +317,7 @@ export const fetchMyTournaments = createAsyncThunk(
       dispatch(setTournaments(validTournaments));
       return validTournaments;
     } catch (error: any) {
-      console.error('Error fetching my tournaments:', error);
+      logger.error('Error fetching my tournaments:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch tournaments';
       dispatch(setError(errorMsg));
       return rejectWithValue(errorMsg);
@@ -359,7 +335,6 @@ export const fetchMyParticipatedTournaments = createAsyncThunk(
 
     try {
       const response = await axiosPrivate.get(MY_PARTICIPATIONS_API);
-      console.log('My participations response:', response.data);
 
       const tournaments = response.data.data || response.data || [];
       const mappedTournaments = tournaments.map(mapApiTournamentToAppTournament);
@@ -368,7 +343,7 @@ export const fetchMyParticipatedTournaments = createAsyncThunk(
       dispatch(setParticipatedTournaments(validTournaments));
       return validTournaments;
     } catch (error: any) {
-      console.error('Error fetching my participations:', error);
+      logger.error('Error fetching my participations:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch tournaments';
       dispatch(setError(errorMsg));
       return rejectWithValue(errorMsg);

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Loading } from '@/components/ui/loading';
 import axiosPublic from '@/utils/axios/axiosPublic';
+import logger from '@/utils/logger';
 
 // Simple QR Code Display using external API
 const QRCodeDisplay = ({ data }: { data: string }) => {
@@ -126,7 +127,7 @@ export default function VNPayQRPage() {
       setPollingAttempts(prev => prev + 1);
 
       if (data.status === 'succeeded') {
-        console.log('[QR Payment] Payment succeeded!');
+        logger.debug('[QR Payment] Payment succeeded!');
         setStatus('success');
         stopPolling();
 
@@ -139,7 +140,7 @@ export default function VNPayQRPage() {
           });
         }, 2000);
       } else if (data.status === 'failed') {
-        console.log('[QR Payment] Payment failed');
+        logger.debug('[QR Payment] Payment failed');
         stopPolling();
 
         // Show error state instead of navigating
@@ -147,7 +148,7 @@ export default function VNPayQRPage() {
         setStatus('error');
       }
     } catch (err: any) {
-      console.error('[QR Payment] Polling error:', err);
+      logger.error('[QR Payment] Polling error:', err);
     }
   }, [paymentId, bookingId, amount, navigate, stopPolling]);
 
@@ -167,14 +168,14 @@ export default function VNPayQRPage() {
 
     setIsFetchingPaymentInfo(true);
     try {
-      console.log('[VNPay QR] Fetching payment info for:', bookingIdOrPaymentId);
+      logger.debug('[VNPay QR] Fetching payment info for:', bookingIdOrPaymentId);
 
       // Try to get transaction by booking ID first
       const response = await axiosPublic.get(`/transactions/booking/${bookingIdOrPaymentId}`);
       const payment = response.data?.data || response.data;
 
       if (payment) {
-        console.log('[VNPay QR] ✅ Payment info fetched:', {
+        logger.debug('[VNPay QR] Payment info fetched:', {
           paymentId: payment._id || payment.id,
           bookingId: payment.booking || bookingIdOrPaymentId,
           amount: payment.amount,
@@ -196,7 +197,7 @@ export default function VNPayQRPage() {
 
       return null;
     } catch (err: any) {
-      console.error('[VNPay QR] Failed to fetch payment info:', err);
+      logger.error('[VNPay QR] Failed to fetch payment info:', err);
       // If booking ID fails, try payment ID
       try {
         const response = await axiosPublic.get(`/transactions/${bookingIdOrPaymentId}`);
@@ -217,7 +218,7 @@ export default function VNPayQRPage() {
           };
         }
       } catch (err2) {
-        console.error('[VNPay QR] Failed to fetch by payment ID:', err2);
+        logger.error('[VNPay QR] Failed to fetch by payment ID:', err2);
       }
 
       return null;
@@ -233,8 +234,7 @@ export default function VNPayQRPage() {
 
     // If missing payment info, try to fetch it
     if (!finalPaymentId || !finalAmount) {
-      console.log('[VNPay QR] ⚠️ Missing payment info, attempting to fetch...');
-      console.log('[VNPay QR] Current state:', { paymentId, bookingId, amount });
+      logger.warn('[VNPay QR] Missing payment info, attempting to fetch...', { paymentId, bookingId, amount });
 
       // Try bookingId first, then paymentId
       const idToFetch = finalBookingId || finalPaymentId;
@@ -247,15 +247,15 @@ export default function VNPayQRPage() {
           finalAmount = paymentInfo.amount;
           finalBookingId = paymentInfo.bookingId;
 
-          console.log('[VNPay QR] ✅ Payment info loaded:', { finalPaymentId, finalAmount, finalBookingId });
+          logger.debug('[VNPay QR] Payment info loaded:', { finalPaymentId, finalAmount, finalBookingId });
         } else {
-          console.error('[VNPay QR] ❌ Could not fetch payment info');
+          logger.error('[VNPay QR] Could not fetch payment info');
           setError('Không tìm thấy thông tin thanh toán. Vui lòng tạo đặt sân lại.');
           setStatus('error');
           return;
         }
       } else {
-        console.error('[VNPay QR] ❌ No bookingId or paymentId available');
+        logger.error('[VNPay QR] No bookingId or paymentId available');
         setError('Missing payment information. Vui lòng quay lại trang đặt sân.');
         setStatus('error');
         return;
@@ -264,7 +264,7 @@ export default function VNPayQRPage() {
 
     try {
       setStatus('loading');
-      console.log('[VNPay QR] Creating QR code with:', { paymentId: finalPaymentId, amount: finalAmount });
+      logger.debug('[VNPay QR] Creating QR code with:', { paymentId: finalPaymentId, amount: finalAmount });
 
       const response = await axiosPublic.post<QRCodeData>('/transactions/create-vnpay-qr', {
         paymentId: finalPaymentId,
@@ -279,7 +279,7 @@ export default function VNPayQRPage() {
       startPolling();
 
     } catch (err: any) {
-      console.error('[VNPay QR] Failed to create QR code:', err);
+      logger.error('[VNPay QR] Failed to create QR code:', err);
       setError(err.response?.data?.message || 'Không thể tạo mã QR. Vui lòng thử lại.');
       setStatus('error');
     }
@@ -300,10 +300,10 @@ export default function VNPayQRPage() {
         setExtensionCount((prev) => prev + 1);
         setShowTimeoutWarning(false);
 
-        console.log('[QR Payment] Time extended successfully');
+        logger.debug('[QR Payment] Time extended successfully');
       }
     } catch (err: any) {
-      console.error('[QR Payment] Failed to extend time:', err);
+      logger.error('[QR Payment] Failed to extend time:', err);
       setError('Không thể gia hạn thời gian. Vui lòng thử lại.');
     } finally {
       setIsExtending(false);
@@ -339,7 +339,7 @@ export default function VNPayQRPage() {
     if (paymentId || bookingId) {
       fetchQRCode();
     } else {
-      console.error('[VNPay QR] No paymentId or bookingId available');
+      logger.error('[VNPay QR] No paymentId or bookingId available');
       setError('Missing payment information. Vui lòng quay lại trang đặt sân.');
       setStatus('error');
     }
@@ -362,7 +362,7 @@ export default function VNPayQRPage() {
           data: { reason: 'User cancelled payment' }
         });
       } catch (err) {
-        console.error('[QR Payment] Failed to cancel payment:', err);
+        logger.error('[QR Payment] Failed to cancel payment:', err);
       }
     }
 

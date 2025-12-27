@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import logger from "@/utils/logger";
 import type { Coach, LegacyCoach, CoachDetail, ErrorResponse } from "../../types/coach-type";
 import {
     getCoaches,
@@ -15,13 +16,13 @@ interface CoachState {
     currentCoach: CoachDetail | null;
     resolvedCoachId: string | null;
     resolvedCoachRaw: any | null;
-    
+
     // Loading states
     loading: boolean;
     detailLoading: boolean;
     allCoachesLoading: boolean;
     resolveCoachIdLoading: boolean;
-    
+
     // Error states
     error: ErrorResponse | null;
     detailError: ErrorResponse | null;
@@ -79,27 +80,21 @@ const coachSlice = createSlice({
 
             // Get coach by ID
             .addCase(getCoachById.pending, (state) => {
-                console.log("⏳ [COACH SLICE] getCoachById pending - setting detailLoading to true");
+                logger.debug("getCoachById pending");
                 state.detailLoading = true;
                 state.detailError = null;
             })
             .addCase(getCoachById.fulfilled, (state, action) => {
-                console.log("✅ [COACH SLICE] getCoachById fulfilled - updating currentCoach:", {
+                logger.debug("getCoachById fulfilled", {
                     coachId: action.payload.data.id,
                     coachName: action.payload.data.name,
-                    coachRating: action.payload.data.rating,
-                    coachPrice: action.payload.data.price,
-                    timestamp: new Date().toISOString()
                 });
                 state.detailLoading = false;
                 state.currentCoach = action.payload.data;
                 state.detailError = null;
             })
             .addCase(getCoachById.rejected, (state, action) => {
-                console.error("❌ [COACH SLICE] getCoachById rejected:", {
-                    error: action.payload,
-                    timestamp: new Date().toISOString()
-                });
+                logger.error("getCoachById rejected:", action.payload);
                 state.detailLoading = false;
                 state.detailError = action.payload || { message: "Unknown error", status: "500" };
             })
@@ -118,7 +113,7 @@ const coachSlice = createSlice({
                 state.allCoachesLoading = false;
                 state.allCoachesError = action.payload || { message: "Unknown error", status: "500" };
             })
-            
+
             // Resolve coach id by user id
             .addCase(getCoachIdByUserId.pending, (state) => {
                 state.resolveCoachIdLoading = true;
@@ -134,7 +129,7 @@ const coachSlice = createSlice({
                 state.resolveCoachIdLoading = false;
                 state.resolveCoachIdError = action.payload || { message: "Unknown error", status: "500" };
             });
-        
+
         // Handle updateCoach
         builder
             .addCase(updateCoach.pending, (state) => {

@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import logger from "@/utils/logger";
 import type { ChatState, ChatRoom, SocketMessageEvent, TypingEvent } from "./chat-type";
 import {
   getChatRooms,
@@ -32,12 +33,9 @@ const chatSlice = createSlice({
     addMessage: (state, action: PayloadAction<SocketMessageEvent>) => {
       const { chatRoomId, message, chatRoom } = action.payload;
 
-      console.log('📝 [chatSlice] addMessage reducer called:', {
+      logger.debug('chatSlice addMessage called', {
         chatRoomId,
-        chatRoomObjectId: chatRoom?._id,
         currentRoomId: state.currentRoom?._id,
-        roomsCount: state.rooms.length,
-        messageContent: message.content?.substring(0, 30),
         matchesCurrentRoom: state.currentRoom?._id === chatRoomId,
       });
 
@@ -51,19 +49,19 @@ const chatSlice = createSlice({
           return m.sender === message.sender && m.content === message.content && timeClose;
         });
         if (!exists) {
-          console.log('✅ [chatSlice] Adding message to currentRoom');
+          logger.debug('Adding message to currentRoom');
           state.currentRoom.messages.push(message);
           state.currentRoom.lastMessageAt = new Date().toISOString();
           state.currentRoom.lastMessageBy = message.sender;
         } else {
-          console.log('⏭️ [chatSlice] Message already exists in currentRoom, skipping');
+          logger.debug('Message already exists in currentRoom, skipping');
         }
       }
 
       // Update rooms list
       const roomIndex = state.rooms.findIndex(room => room._id === chatRoomId);
       if (roomIndex !== -1) {
-        console.log('📋 [chatSlice] Updating room in rooms list at index:', roomIndex);
+        logger.debug('Updating room in rooms list');
         state.rooms[roomIndex] = {
           ...chatRoom,
           hasUnread: state.currentRoom?._id !== chatRoomId,
@@ -73,7 +71,7 @@ const chatSlice = createSlice({
         const updatedRoom = state.rooms.splice(roomIndex, 1)[0];
         state.rooms.unshift(updatedRoom);
       } else {
-        console.log('🆕 [chatSlice] Adding new room to rooms list');
+        logger.debug('Adding new room to rooms list');
         // Add new room
         state.rooms.unshift(chatRoom);
       }
@@ -113,7 +111,7 @@ const chatSlice = createSlice({
       state.widgetView = action.payload;
     },
     resetChatState: (state) => {
-      console.log('🔄 [chatSlice] Resetting chat state on logout');
+      logger.debug('Resetting chat state on logout');
       state.rooms = [];
       state.currentRoom = null;
       state.unreadCount = 0;

@@ -13,6 +13,7 @@ import { SportType as SPORT_TYPE_CONST } from "../../types/coach-type";
 import axiosPublic from "../../utils/axios/axiosPublic";
 import axiosUpload from "../../utils/axios/axiosUpload";
 import axiosPrivate from "../../utils/axios/axiosPrivate";
+import logger from "@/utils/logger";
 import {
     COACHES_API,
     COACH_BY_ID_API,
@@ -123,9 +124,7 @@ export const getCoaches = createAsyncThunk<
         const url = queryParams.toString() ? `${COACHES_API}?${queryParams}` : COACHES_API;
         const response = await axiosPublic.get(url);
 
-        console.log("-----------------------------------------------------");
-        console.log("Get coaches response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Get coaches response:", response.data);
 
         const raw = response.data;
         const apiList = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
@@ -148,19 +147,17 @@ export const getCoachById = createAsyncThunk<
     { rejectValue: ErrorResponse }
 >("coach/getCoachById", async (id, thunkAPI) => {
     try {
-        console.log("🚀 [COACH THUNK] Starting getCoachById request:", {
+        logger.debug("Starting getCoachById request:", {
             coachId: id,
             apiUrl: COACH_BY_ID_API(id),
-            timestamp: new Date().toISOString()
         });
 
         const response = await axiosPublic.get(COACH_BY_ID_API(id));
 
-        console.log("📥 [COACH THUNK] Raw API response received:", {
+        logger.debug("Raw API response received:", {
             coachId: id,
             status: response.status,
             data: response.data,
-            timestamp: new Date().toISOString()
         });
 
         const raw = response.data;
@@ -170,29 +167,23 @@ export const getCoachById = createAsyncThunk<
         const apiCoach = (apiCoachRaw as any)?.coach ?? apiCoachRaw;
         const mapped = mapApiCoachDetailToAppCoachDetail(apiCoach);
 
-        console.log("🔄 [COACH THUNK] Coach data mapped successfully:", {
+        logger.debug("Coach data mapped successfully:", {
             coachId: id,
-            originalApiCoach: apiCoach,
             mappedCoach: {
                 id: mapped.id,
                 name: mapped.name,
                 location: mapped.location,
                 price: mapped.price,
                 rating: mapped.rating,
-                availableSlots: mapped.availableSlots.length,
-                lessonTypes: mapped.lessonTypes.length
             },
-            timestamp: new Date().toISOString()
         });
 
         return { success: true, data: mapped, message: raw?.message } as CoachDetailResponse;
     } catch (error: any) {
-        console.error("❌ [COACH THUNK] Error fetching coach by ID:", {
+        logger.error("Error fetching coach by ID:", {
             coachId: id,
             error: error.message,
             status: error.response?.status,
-            responseData: error.response?.data,
-            timestamp: new Date().toISOString()
         });
 
         const errorResponse: ErrorResponse = {
@@ -213,9 +204,7 @@ export const getAllCoaches = createAsyncThunk<
     try {
         const response = await axiosPublic.get(ALL_COACHES_API);
 
-        console.log("-----------------------------------------------------");
-        console.log("Get all coaches (legacy) response:", response.data);
-        console.log("-----------------------------------------------------");
+        logger.debug("Get all coaches (legacy) response:", response.data);
 
         const raw = response.data;
         const apiList = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
@@ -305,7 +294,7 @@ export const getCoachIdByUserId = createAsyncThunk<
 >("coach/getCoachIdByUserId", async (userId, thunkAPI) => {
     try {
         const response = await axiosPublic.get(COACH_ID_BY_USER_ID_API(userId));
-        console.log("🔄 [COACH THUNK] Coach ID by user ID response:", {
+        logger.debug("Coach ID by user ID response:", {
             response: response.data,
         });
         const raw: CoachProfileResponse = response?.data as CoachProfileResponse;

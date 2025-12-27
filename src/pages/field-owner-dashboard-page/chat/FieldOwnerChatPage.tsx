@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import logger from "@/utils/logger";
 import { FieldOwnerDashboardLayout } from "@/components/layouts/field-owner-dashboard-layout";
 import { useAppSelector, useAppDispatch } from "@/store/hook";
 import { getChatRoom, markAsRead, getFieldOwnerChatRooms } from "@/features/chat/chatThunk";
@@ -21,7 +22,7 @@ const FieldOwnerChatDashboard: React.FC = () => {
     const [localMessages, setLocalMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const [fieldOwnerProfile, setFieldOwnerProfile] = useState<any>(null); // Local state
+
     const { rooms, currentRoom, loading, typingUsers } = useAppSelector((state) => state.chat);
     const dispatch = useAppDispatch();
     const fieldOwnerData = sessionStorage.getItem("user");
@@ -53,15 +54,8 @@ const FieldOwnerChatDashboard: React.FC = () => {
 
     // After fetching rooms, add this:
     useEffect(() => {
-        console.log('Rooms fetched:', rooms);
-        console.log('Field Owner Profile:', fieldOwnerProfile);
-        console.log('Field Owner ID from session:', fieldOwnerId);
-
-        // Log each room's fieldOwner ID
-        rooms.forEach((room, index) => {
-            console.log(`Room ${index}: fieldOwner._id = ${room.fieldOwner?._id}`);
-        });
-    }, [rooms, fieldOwnerProfile, fieldOwnerId]);
+        logger.debug('Rooms fetched', { count: rooms.length });
+    }, [rooms]);
 
     const getFieldOwnerProfile = async () => {
         try {
@@ -69,7 +63,7 @@ const FieldOwnerChatDashboard: React.FC = () => {
             const response = await axiosPrivate.get(`/field-owner/profile/`);
             return response.data;
         } catch (error) {
-            console.error("Error fetching field owner profile:", error);
+            logger.error("Error fetching field owner profile:", error);
             return null;
         }
     };
@@ -83,8 +77,7 @@ const FieldOwnerChatDashboard: React.FC = () => {
 
         getFieldOwnerProfile().then(profile => {
             if (profile) {
-                // You might want to store this in state or context
-                console.log("Field owner profile:", profile);
+                logger.debug("Field owner profile loaded");
             }
         });
     }, []);
@@ -107,10 +100,10 @@ const FieldOwnerChatDashboard: React.FC = () => {
             try {
                 const response = await axiosPrivate.get(`/field-owner/profile/`);
                 if (response.data?.success) {
-                    setFieldOwnerProfile(response.data.data);
+                    // setFieldOwnerProfile(response.data.data);
                 }
             } catch (error) {
-                console.error("Error fetching field owner profile:", error);
+                logger.error("Error fetching field owner profile:", error);
             }
         };
         init();

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch } from '@/store/hook';
 import { queryPayOSTransaction } from '@/features/transactions/transactionsThunk';
 import type { PayOSQueryResult } from '@/types/payment-type';
+import logger from '@/utils/logger';
 
 interface UsePayOSPaymentStatusOptions {
   orderCode: number | null;
@@ -47,12 +48,12 @@ export const usePayOSPaymentStatus = ({
       setLoading(false);
 
       // Log status change
-      console.log('[usePayOSPaymentStatus] Status updated:', result.status);
+      logger.debug('[usePayOSPaymentStatus] Status updated:', result.status);
 
       // Return true if should continue polling
       return !['PAID', 'CANCELLED', 'EXPIRED'].includes(result.status);
     } catch (err: any) {
-      console.error('[usePayOSPaymentStatus] Error checking status:', err);
+      logger.error('[usePayOSPaymentStatus] Error checking status:', err);
       setError(err.message || 'Failed to check payment status');
       setLoading(false);
       return false;
@@ -73,7 +74,7 @@ export const usePayOSPaymentStatus = ({
       const shouldContinue = await checkStatus();
       
       if (!shouldContinue) {
-        console.log('[usePayOSPaymentStatus] Payment reached terminal state, stopping poll');
+        logger.debug('[usePayOSPaymentStatus] Payment reached terminal state, stopping poll');
         clearInterval(pollInterval);
       }
     }, interval);

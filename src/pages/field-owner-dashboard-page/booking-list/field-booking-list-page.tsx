@@ -28,6 +28,7 @@ import {
     getMyFieldsBookings,
 } from "@/features/field/fieldThunk";
 import type { FieldOwnerBooking } from "@/types/field-type";
+import logger from "@/utils/logger";
 import { formatCurrency } from "@/utils/format-currency";
 import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -223,7 +224,7 @@ export default function FieldHistoryBookingPage() {
                 if (Array.isArray(parsed)) setHiddenIds(parsed);
             }
         } catch (error) {
-            console.error("Error loading hidden booking IDs from localStorage", error);
+            logger.error("Error loading hidden booking IDs from localStorage", error);
         }
     }, []);
 
@@ -232,7 +233,7 @@ export default function FieldHistoryBookingPage() {
         try {
             localStorage.setItem('ownerHiddenBookingIds', JSON.stringify(hiddenIds));
         } catch (error) {
-            console.error("Error persisting hidden booking IDs to localStorage", error);
+            logger.error("Error persisting hidden booking IDs to localStorage", error);
         }
     }, [hiddenIds]);
 
@@ -368,7 +369,7 @@ export default function FieldHistoryBookingPage() {
                 })
             );
         } catch (e) {
-            console.error(`${action} booking failed`, e);
+            logger.error(`${action} booking failed`, e);
         } finally {
             setConfirmState({ open: false, action: null, bookingId: null });
         }
@@ -388,7 +389,7 @@ export default function FieldHistoryBookingPage() {
 
     const handleSortChange = (value: string) => {
         // Note: Backend doesn't support sort yet, so we'll handle it client-side if needed
-        console.log("Sort:", value);
+        logger.debug("Sort:", value);
     };
 
     const handleTabChangeFromFilter = (value: string) => {

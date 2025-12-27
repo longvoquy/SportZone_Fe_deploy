@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { SportType } from "@/components/enums/ENUMS"
 import type { CreateCoachRegistrationPayload } from "@/features/coach-registration"
+import logger from "@/utils/logger"
 
 interface CoachProfileStepProps {
     formData: CreateCoachRegistrationPayload
@@ -110,7 +111,7 @@ const searchLocation = async (query: string): Promise<GeocodingResult | null> =>
                 }
             }
         } catch (error) {
-            console.warn(`Failed to search for: ${candidate}`, error)
+            logger.warn(`Failed to search for: ${candidate}`, error)
             continue
         }
     }
@@ -273,7 +274,7 @@ const CoachProfileStep: React.FC<CoachProfileStepProps> = ({ formData, updateFor
                 alert("Không tìm thấy địa điểm phù hợp")
             }
         } catch (error) {
-            console.error("Geocoding error:", error)
+            logger.error("Geocoding error:", error)
             alert("Có lỗi xảy ra khi tìm kiếm địa điểm")
         } finally {
             setIsSearching(false)

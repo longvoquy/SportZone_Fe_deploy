@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import logger from '@/utils/logger'
 
 // Types
 interface LocationPickerModalProps {
@@ -98,7 +99,7 @@ const searchLocation = async (query: string): Promise<GeocodingResult | null> =>
         }
       }
     } catch (error) {
-      console.warn(`Failed to search for: ${candidate}`, error)
+      logger.warn(`Failed to search for: ${candidate}`, error)
       continue
     }
   }
@@ -172,7 +173,7 @@ export function LocationPickerModal({
 
           // Add error event listener
           tileLayer.on('tileerror', (error) => {
-            console.error('[LocationPickerModal] Tile loading error:', error)
+            logger.error('[LocationPickerModal] Tile loading error:', error)
           })
 
           // Fix default marker icon
@@ -229,9 +230,9 @@ export function LocationPickerModal({
             }, delay)
           })
 
-          console.log('[LocationPickerModal] Map initialized successfully')
+          logger.debug('[LocationPickerModal] Map initialized successfully')
         } catch (error) {
-          console.error('[LocationPickerModal] Error initializing map:', error)
+          logger.error('[LocationPickerModal] Error initializing map:', error)
         }
       })
     }
@@ -244,7 +245,7 @@ export function LocationPickerModal({
       // Check if container has dimensions
       const container = mapContainerRef.current
       if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-        console.warn('[LocationPickerModal] Map container has no dimensions, retrying...')
+        logger.warn('[LocationPickerModal] Map container has no dimensions, retrying...')
         // Retry after a short delay
         setTimeout(() => {
           if (!mapContainerRef.current || mapRef.current) return
@@ -325,7 +326,7 @@ export function LocationPickerModal({
         alert('Không tìm thấy địa điểm phù hợp')
       }
     } catch (error) {
-      console.error('Geocoding error:', error)
+      logger.error('Geocoding error:', error)
       alert('Có lỗi xảy ra khi tìm kiếm địa điểm')
     } finally {
       setIsSearching(false)

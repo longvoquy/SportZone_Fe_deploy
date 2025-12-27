@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useAppSelector } from "@/store/hook";
 import { useNavigate } from "react-router-dom";
 import { CustomSuccessToast, CustomFailedToast } from "@/components/toast/notificiation-toast";
+import logger from "@/utils/logger";
 
 interface BookingFormData {
     date: string;
@@ -75,14 +76,14 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
             const storedBookingId = localStorage.getItem('heldBookingId');
             const storedHoldTime = localStorage.getItem('heldBookingTime');
 
-            console.log('[PAYMENT V2 COACH] Checking localStorage for held booking:', {
+            logger.debug('[PAYMENT V2 COACH] Checking localStorage for held booking:', {
                 storedBookingId,
                 storedHoldTime
             });
 
             // Validate stored booking ID
             if (!storedBookingId || storedBookingId.trim() === '' || storedBookingId === 'undefined' || storedBookingId === 'null') {
-                console.warn('⚠️ [PAYMENT V2 COACH] Invalid or missing heldBookingId in localStorage:', storedBookingId);
+                logger.warn('[PAYMENT V2 COACH] Invalid or missing heldBookingId in localStorage:', storedBookingId);
                 setHoldError('Chưa có booking được giữ chỗ. Vui lòng quay lại bước trước.');
                 return;
             }
@@ -90,7 +91,7 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
             if (storedHoldTime) {
                 const holdTime = parseInt(storedHoldTime);
                 if (isNaN(holdTime)) {
-                    console.error('❌ [PAYMENT V2 COACH] Invalid hold time:', storedHoldTime);
+                    logger.error('[PAYMENT V2 COACH] Invalid hold time:', storedHoldTime);
                     setHoldError('Dữ liệu booking không hợp lệ. Vui lòng quay lại bước trước.');
                     return;
                 }
@@ -102,24 +103,24 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
                 if (remaining > 0) {
                     setHeldBookingId(storedBookingId);
                     setCountdown(remaining);
-                    console.log('✅ [PAYMENT V2 COACH] Restored held booking:', {
+                    logger.debug('[PAYMENT V2 COACH] Restored held booking:', {
                         heldBookingId: storedBookingId,
                         remainingSeconds: remaining
                     });
                 } else {
                     // Booking expired, clear localStorage
-                    console.warn('⚠️ [PAYMENT V2 COACH] Held booking expired');
+                    logger.warn('[PAYMENT V2 COACH] Held booking expired');
                     localStorage.removeItem('heldBookingId');
                     localStorage.removeItem('heldBookingCountdown');
                     localStorage.removeItem('heldBookingTime');
                     setHoldError('Thời gian giữ chỗ đã hết. Vui lòng quay lại và đặt lại.');
                 }
             } else {
-                console.warn('⚠️ [PAYMENT V2 COACH] No hold time found in localStorage');
+                logger.warn('[PAYMENT V2 COACH] No hold time found in localStorage');
                 setHoldError('Chưa có booking được giữ chỗ. Vui lòng quay lại bước trước.');
             }
         } catch (error) {
-            console.error('❌ [PAYMENT V2 COACH] Error restoring held booking:', error);
+            logger.error('[PAYMENT V2 COACH] Error restoring held booking:', error);
             setHoldError('Lỗi khi khôi phục thông tin booking. Vui lòng quay lại bước trước.');
         }
     }, []);
@@ -144,13 +145,13 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Có lỗi xảy ra' }));
-                console.error('[PaymentV2Coach] Error cancelling booking on countdown expiry:', errorData);
+                logger.error('[PaymentV2Coach] Error cancelling booking on countdown expiry:', errorData);
             } else {
-                console.log('[PaymentV2Coach] ✅ Booking hold cancelled successfully');
+                logger.debug('[PaymentV2Coach] Booking hold cancelled successfully');
             }
         } catch (error) {
             // Log error but continue with cleanup
-            console.error('[PaymentV2Coach] Error cancelling booking on countdown expiry:', error);
+            logger.error('[PaymentV2Coach] Error cancelling booking on countdown expiry:', error);
         }
 
         // Clear all localStorage (always run, even if API call fails)
@@ -203,11 +204,11 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
                 const bankAccountData = result?.data || result;
                 setBankAccount(bankAccountData);
             } else {
-                console.error('Failed to fetch bank account:', response.status, response.statusText);
+                logger.error('Failed to fetch bank account:', response.status, response.statusText);
                 setBankAccount(null);
             }
         } catch (error) {
-            console.error('Error fetching bank account:', error);
+            logger.error('Error fetching bank account:', error);
             setBankAccount(null);
         } finally {
             setLoadingBankAccount(false);
@@ -313,7 +314,7 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
 
         // Additional validation: ensure heldBookingId is a valid string
         if (typeof heldBookingId !== 'string' || heldBookingId.trim() === '' || heldBookingId === 'undefined') {
-            console.error('[PaymentV2Coach] Invalid heldBookingId:', heldBookingId);
+            logger.error('[PaymentV2Coach] Invalid heldBookingId:', heldBookingId);
             setPaymentError('ID booking không hợp lệ. Vui lòng quay lại bước trước.');
             return;
         }
@@ -322,14 +323,14 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
         // User có thể submit payment proof ngay khi có heldBookingId
         if (countdown <= 0) {
             // Chỉ warning, không block - vẫn cho phép submit
-            console.warn('Countdown đã hết, nhưng vẫn cho phép submit payment proof');
+            logger.warn('Countdown đã hết, nhưng vẫn cho phép submit payment proof');
         }
 
         setPaymentStatus('processing');
         setPaymentError(null);
 
         try {
-            console.log('[PaymentV2Coach] Submitting payment proof for booking:', heldBookingId);
+            logger.debug('[PaymentV2Coach] Submitting payment proof for booking:', heldBookingId);
 
             // Create FormData with payment proof
             const formDataToSend = new FormData();
@@ -344,7 +345,7 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
 
             // Submit payment proof for existing booking
             const url = `${import.meta.env.VITE_API_URL}/bookings/${heldBookingId}/submit-payment-proof`;
-            console.log('[PaymentV2Coach] Submitting to URL:', url);
+            logger.debug('[PaymentV2Coach] Submitting to URL:', url);
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -354,13 +355,13 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Có lỗi xảy ra' }));
-                console.error('[PaymentV2Coach] Server error:', errorData);
+                logger.error('[PaymentV2Coach] Server error:', errorData);
                 throw new Error(errorData.message || 'Không thể gửi ảnh chứng minh. Vui lòng thử lại.');
             }
 
             const responseData = await response.json();
             const booking = responseData.data || responseData;
-            console.log('[PaymentV2Coach] Payment proof submitted successfully:', booking);
+            logger.debug('[PaymentV2Coach] Payment proof submitted successfully:', booking);
 
             // Check for AI verification result
             const isConfirmed = booking.status === 'confirmed';
@@ -406,10 +407,10 @@ export const PaymentV2Coach: React.FC<PaymentV2CoachProps> = ({
                     navigate(`/bookings/${booking._id || booking.id}`);
                 }, 2000);
             } else {
-                console.log('[PaymentV2Coach] AI verification rejected. Staying on page for retry.');
+                logger.debug('[PaymentV2Coach] AI verification rejected. Staying on page for retry.');
             }
         } catch (error: any) {
-            console.error('[PaymentV2Coach] Error submitting payment proof:', error);
+            logger.error('[PaymentV2Coach] Error submitting payment proof:', error);
             const errorMessage = error?.message || 'Không thể gửi ảnh chứng minh. Vui lòng thử lại.';
             setPaymentError(errorMessage);
             setPaymentStatus('error');

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppSelector } from "@/store/hook";
 import axiosPrivate from "@/utils/axios/axiosPrivate";
+import logger from "@/utils/logger";
 
 /**
  * Interface for booking form data
@@ -173,7 +174,7 @@ export const PersonalInfoCoach: React.FC<PersonalInfoCoachProps> = ({
 
             // Validate booking ID before storing
             if (!bookingIdStr || typeof bookingIdStr !== 'string' || bookingIdStr.trim() === '') {
-                console.error('❌ [PERSONAL INFO COACH] Invalid booking ID received from server:', { responseData, booking });
+                logger.error('[PERSONAL INFO COACH] Invalid booking ID received from server:', { responseData, booking });
                 throw new Error('Không nhận được ID booking hợp lệ từ server. Vui lòng thử lại.');
             }
 
@@ -182,14 +183,14 @@ export const PersonalInfoCoach: React.FC<PersonalInfoCoachProps> = ({
             localStorage.setItem('heldBookingTime', Date.now().toString());
             localStorage.setItem('heldBookingCountdown', '300'); // 5 minutes
 
-            console.log('✅ [PERSONAL INFO COACH] Booking hold created:', bookingIdStr);
+            logger.debug('[PERSONAL INFO COACH] Booking hold created:', bookingIdStr);
 
             // Move to payment step
             if (onSubmit) {
                 onSubmit(formData);
             }
         } catch (error: any) {
-            console.error('❌ [PERSONAL INFO COACH] Error creating booking hold:', error);
+            logger.error('[PERSONAL INFO COACH] Error creating booking hold:', error);
             const errorMessage = error.response?.data?.message || error.message || 'Không thể giữ chỗ. Vui lòng thử lại.';
             setHoldError(errorMessage);
         }

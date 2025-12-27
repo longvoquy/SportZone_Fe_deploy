@@ -20,6 +20,7 @@ import { createFieldReviewThunk } from "@/features/reviews/reviewThunk"
 import { getReviewsForFieldAPI } from "@/features/reviews/reviewAPI"
 import { getFieldById } from "@/features/field/fieldThunk"
 import { CustomSuccessToast, CustomFailedToast } from "@/components/toast/notificiation-toast"
+import logger from "@/utils/logger"
 
 interface RatingCardProps {
   refObj: React.RefObject<HTMLDivElement | null>
@@ -94,7 +95,7 @@ export const RatingCard: React.FC<RatingCardProps> = ({ refObj, id, ratingValue,
         setReviewsPage(pagination.page ?? page)
         setReviewsTotalPages(pagination.totalPages ?? 1)
       } catch (err) {
-        console.error('❌ [RATING CARD] Failed to load field reviews', err)
+        logger.error('[RATING CARD] Failed to load field reviews', err)
         // Don't clear existing reviews on error, just log it
       } finally {
         setReviewsLoading(false)
@@ -169,14 +170,14 @@ export const RatingCard: React.FC<RatingCardProps> = ({ refObj, id, ratingValue,
         // Wait a bit for database to save, then refresh both reviews and field data
         setTimeout(async () => {
           try {
-            console.log('🔄 [RATING CARD] Refreshing reviews and field data after submit')
+            logger.debug('[RATING CARD] Refreshing reviews and field data after submit')
             // Refresh reviews to show the new review
             await fetchReviews(1, false)
             // Refresh field data to update rating and reviewCount
             await dispatch(getFieldById(fieldId))
-            console.log('✅ [RATING CARD] Successfully refreshed data')
+            logger.debug('[RATING CARD] Successfully refreshed data')
           } catch (err) {
-            console.error('❌ [RATING CARD] Failed to refresh data after submit', err)
+            logger.error('[RATING CARD] Failed to refresh data after submit', err)
           }
         }, 800) // 800ms delay to ensure database has saved
       } else {

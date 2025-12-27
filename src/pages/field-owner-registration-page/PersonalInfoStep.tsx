@@ -9,6 +9,7 @@ import { createEkycSession } from "@/features/field-owner-registration/registrat
 import { useEkycPolling } from "@/hooks/useEkycPolling"
 import { CustomFailedToast, CustomSuccessToast } from "@/components/toast/notificiation-toast"
 import type { CreateRegistrationRequestPayload } from "@/features/field-owner-registration"
+import logger from "@/utils/logger"
 interface PersonalInfoStepProps {
   formData: Partial<CreateRegistrationRequestPayload>
   onFormDataChange: (data: Partial<CreateRegistrationRequestPayload>) => void
@@ -29,10 +30,10 @@ export default function PersonalInfoStep({ formData, onFormDataChange }: Persona
       try {
         if (!popupRef.current.closed) {
           popupRef.current.close()
-          console.log("[PersonalInfoStep] ✅ Closed popup safely")
+          logger.debug("[PersonalInfoStep] ✅ Closed popup safely")
         }
       } catch (err) {
-        console.warn("[PersonalInfoStep] Could not close popup:", err)
+        logger.warn("[PersonalInfoStep] Could not close popup:", err)
       } finally {
         popupRef.current = null
       }
@@ -58,9 +59,9 @@ export default function PersonalInfoStep({ formData, onFormDataChange }: Persona
       if (popupRef.current && !popupRef.current.closed) {
         try {
           popupRef.current.close()
-          console.log("[PersonalInfoStep] Closed popup on unmount")
+          logger.debug("[PersonalInfoStep] Closed popup on unmount")
         } catch (err) {
-          console.warn("[PersonalInfoStep] Could not close popup on unmount:", err)
+          logger.warn("[PersonalInfoStep] Could not close popup on unmount:", err)
         }
       }
 
@@ -72,7 +73,7 @@ export default function PersonalInfoStep({ formData, onFormDataChange }: Persona
   // Auto-fill form when eKYC verified and close popup
   useEffect(() => {
     if (status === "verified" && data) {
-      console.log("[PersonalInfoStep] ✅ eKYC Verified with data:", data)
+      logger.debug("[PersonalInfoStep] ✅ eKYC Verified", { data })
 
       // Close popup safely
       closePopupSafely()
@@ -114,7 +115,7 @@ export default function PersonalInfoStep({ formData, onFormDataChange }: Persona
     const handleMessage = (event: MessageEvent) => {
       // Verify origin for security
       if (event.origin !== window.location.origin) {
-        console.warn("[PersonalInfoStep] Ignored message from different origin:", event.origin)
+        logger.warn("[PersonalInfoStep] Ignored message from different origin:", event.origin)
         return
       }
 
@@ -122,7 +123,7 @@ export default function PersonalInfoStep({ formData, onFormDataChange }: Persona
       const sessionId = event.data?.sessionId
 
       if (messageType === "ekyc-verified") {
-        console.log("[PersonalInfoStep] ✅ Received eKYC verified message from popup", { sessionId })
+        logger.debug("[PersonalInfoStep] ✅ Received verified message", { sessionId })
 
         // Verify session ID matches
         if (sessionId && sessionId === formData.ekycSessionId) {
@@ -132,13 +133,13 @@ export default function PersonalInfoStep({ formData, onFormDataChange }: Persona
           // Polling should detect the verified status automatically, but we can trigger a check
           // The polling will handle the status update and form filling
         } else {
-          console.warn("[PersonalInfoStep] Session ID mismatch in message", {
+          logger.warn("[PersonalInfoStep] Session ID mismatch in message", {
             received: sessionId,
             expected: formData.ekycSessionId
           })
         }
       } else if (messageType === "ekyc-close-popup") {
-        console.log("[PersonalInfoStep] ✅ Received close popup request from callback", { sessionId })
+        logger.debug("[PersonalInfoStep] ✅ Received close popup request", { sessionId })
         closePopupSafely()
       }
     }
@@ -213,7 +214,7 @@ export default function PersonalInfoStep({ formData, onFormDataChange }: Persona
           }
         } catch (err) {
           // Popup might have been closed or reference is invalid
-          console.warn("[PersonalInfoStep] Error checking popup status:", err)
+          logger.warn("[PersonalInfoStep] Error checking popup status:", err)
           // Clear interval and reference
           if (popupCheckIntervalRef.current) {
             window.clearInterval(popupCheckIntervalRef.current)
@@ -223,7 +224,7 @@ export default function PersonalInfoStep({ formData, onFormDataChange }: Persona
         }
       }, 1000)
     } catch (err: any) {
-      console.error("Create eKYC session error:", err)
+      logger.error("Create eKYC session error:", err)
       CustomFailedToast(err?.response?.data?.message || err?.message || "Không thể khởi tạo xác thực. Vui lòng thử lại.")
     } finally {
       setIsCreatingSession(false)

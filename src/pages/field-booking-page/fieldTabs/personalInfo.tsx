@@ -9,6 +9,7 @@ import { useLocation } from "react-router-dom";
 import type { Field } from "@/types/field-type";
 import axiosPrivate from "@/utils/axios/axiosPrivate";
 import { Loading } from "@/components/ui/loading";
+import logger from "@/utils/logger";
 
 /**
  * Interface for booking form data
@@ -221,7 +222,7 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
 
             // Validate booking ID before storing
             if (!bookingIdStr || typeof bookingIdStr !== 'string' || bookingIdStr.trim() === '') {
-                console.error('❌ [PERSONAL INFO] Invalid booking ID received from server:', { responseData, booking });
+                logger.error('[PERSONAL INFO] Invalid booking ID received from server:', { responseData, booking });
                 throw new Error('Không nhận được ID booking hợp lệ từ server. Vui lòng thử lại.');
             }
 
@@ -230,14 +231,14 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             sessionStorage.setItem('heldBookingTime', Date.now().toString());
             sessionStorage.setItem('heldBookingCountdown', '300'); // 5 minutes
 
-            console.log('✅ [PERSONAL INFO] Booking hold created:', bookingIdStr);
+            logger.debug('[PERSONAL INFO] Booking hold created:', bookingIdStr);
 
             // Move to payment step
             if (onSubmit) {
                 onSubmit(formData);
             }
         } catch (error: any) {
-            console.error('❌ [PERSONAL INFO] Error creating booking hold:', error);
+            logger.error('[PERSONAL INFO] Error creating booking hold:', error);
             const errorMessage = error.response?.data?.message || error.message || 'Không thể giữ chỗ. Vui lòng thử lại.';
             setHoldError(errorMessage);
         } finally {

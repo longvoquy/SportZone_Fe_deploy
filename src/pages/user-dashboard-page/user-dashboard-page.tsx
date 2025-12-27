@@ -26,6 +26,7 @@ import { useAppSelector, useAppDispatch } from "../../store/hook"
 import { Loading } from "@/components/ui/loading"
 import { getMyBookings, cancelFieldBooking, getMyInvoices, getUpcomingBooking } from "../../features/booking/bookingThunk"
 import type { Booking } from "../../types/booking-type"
+import logger from "../../utils/logger"
 
 export default function UserDashboardPage() {
     const navigate = useNavigate()
@@ -77,7 +78,7 @@ export default function UserDashboardPage() {
             else if (selectedTab === 'combined') typeParam = 'field_coach';
             dispatch(getMyBookings({ type: typeParam }))
         } catch (error) {
-            console.error('Failed to cancel booking:', error)
+            logger.error('Failed to cancel booking:', error)
         }
     }
 
@@ -168,11 +169,6 @@ export default function UserDashboardPage() {
         }
     }
 
-    // Debug logging
-    console.log('Bookings from Redux:', bookings)
-    console.log('Pagination from Redux:', pagination)
-    console.log('Bookings type:', typeof bookings)
-    console.log('Is array:', Array.isArray(bookings))
 
     // Filter bookings by type
     const filteredBookings = bookings.filter(booking => {

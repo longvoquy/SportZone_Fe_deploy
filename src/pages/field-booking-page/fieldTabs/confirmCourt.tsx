@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useLocation } from "react-router-dom"
 import { useAppSelector } from "@/store/hook"
 import type { Field } from "@/types/field-type"
+import logger from "@/utils/logger"
 
 /**
  * Interface for amenity item
@@ -99,7 +100,7 @@ export const ConfirmCourtTab: React.FC<ConfirmCourtTabProps> = ({
     const venue = (venueProp || currentField || (location.state as any)?.venue) as Field | undefined
 
     // Log field data usage in ConfirmCourt tab
-    console.log("✅ [CONFIRM COURT TAB] Field data loaded:", {
+    logger.debug("[CONFIRM COURT TAB] Field data loaded:", {
         hasVenueProp: !!venueProp,
         hasCurrentField: !!currentField,
         hasLocationState: !!(location.state as any)?.venue,
