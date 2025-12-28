@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { useAppSelector, useAppDispatch } from "@/store/hook"
 import { toast } from "sonner"
 import { Building2, MapPin, Phone } from "lucide-react"
-import { SportType } from "@/components/enums/ENUMS"
 import {
     getMyOwnerProfile,
     updateMyOwnerProfile,
@@ -24,7 +23,6 @@ export default function FieldOwnerTab() {
     const [formData, setFormData] = useState({
         facilityName: "",
         facilityLocation: "",
-        supportedSports: [] as string[],
         description: "",
         businessHours: "",
         contactPhone: "",
@@ -32,18 +30,6 @@ export default function FieldOwnerTab() {
         businessEmail: "",
     })
     const [isEditing, setIsEditing] = useState(false)
-
-    // Nhãn hiển thị tiếng Việt cho các môn thể thao
-    const SPORT_LABELS: Record<string, string> = {
-        [SportType.FOOTBALL]: "Bóng đá",
-        [SportType.TENNIS]: "Quần vợt",
-        [SportType.BADMINTON]: "Cầu lông",
-        [SportType.PICKLEBALL]: "Pickleball",
-        [SportType.BASKETBALL]: "Bóng rổ",
-        [SportType.VOLLEYBALL]: "Bóng chuyền",
-        [SportType.SWIMMING]: "Bơi lội",
-        [SportType.GYM]: "Gym",
-    }
 
     // Fetch field owner profile data on component mount
     useEffect(() => {
@@ -61,7 +47,6 @@ export default function FieldOwnerTab() {
             setFormData({
                 facilityName: myProfile.facilityName || "",
                 facilityLocation: myProfile.facilityLocation || "",
-                supportedSports: myProfile.supportedSports || [],
                 description: myProfile.description || "",
                 businessHours: myProfile.businessHours || "",
                 contactPhone: myProfile.contactPhone || user?.phone || "",
@@ -97,7 +82,6 @@ export default function FieldOwnerTab() {
             const payload = {
                 facilityName: formData.facilityName,
                 facilityLocation: formData.facilityLocation || undefined,
-                supportedSports: formData.supportedSports.length ? formData.supportedSports : undefined,
                 description: formData.description || undefined,
                 businessHours: formData.businessHours || undefined,
                 contactPhone: formData.contactPhone || undefined,
@@ -127,7 +111,6 @@ export default function FieldOwnerTab() {
                 setFormData({
                     facilityName: myProfile.facilityName || "",
                     facilityLocation: myProfile.facilityLocation || "",
-                    supportedSports: myProfile.supportedSports || [],
                     description: myProfile.description || "",
                     businessHours: myProfile.businessHours || "",
                     contactPhone: myProfile.contactPhone || user?.phone || "",
@@ -138,7 +121,6 @@ export default function FieldOwnerTab() {
                 setFormData({
                     facilityName: "",
                     facilityLocation: "",
-                    supportedSports: [],
                     description: "",
                     businessHours: "",
                     contactPhone: user.phone || "",
@@ -180,38 +162,6 @@ export default function FieldOwnerTab() {
                                         className="h-14 p-5 bg-gray-50 rounded-[10px] border-0 text-base font-normal text-[#6B7385] placeholder:text-[#6B7385]"
                                         disabled={!isEditing}
                                     />
-                                </div>
-                                <div className="space-y-2.5 md:col-span-2">
-                                    <Label className="text-base font-normal text-start">
-                                        Môn thể thao hỗ trợ
-                                    </Label>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                        {Object.values(SportType).map((sport) => {
-                                            const checked = formData.supportedSports.includes(sport)
-                                            return (
-                                                <label
-                                                    key={sport}
-                                                    className={`flex items-center gap-2 text-sm rounded-md border px-3 py-2 transition-colors ${checked ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-medium' : 'bg-white border-gray-300 text-[#6B7385]'} ${!isEditing ? 'opacity-70' : 'cursor-pointer'}`}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        className="h-4 w-4 accent-emerald-600"
-                                                        checked={checked}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => {
-                                                                const next = new Set(prev.supportedSports)
-                                                                if (e.target.checked) next.add(sport)
-                                                                else next.delete(sport)
-                                                                return { ...prev, supportedSports: Array.from(next) }
-                                                            })
-                                                        }}
-                                                        disabled={!isEditing}
-                                                    />
-                                                    <span className="capitalize">{SPORT_LABELS[sport] || sport.replace("_", " ")}</span>
-                                                </label>
-                                            )
-                                        })}
-                                    </div>
                                 </div>
                             </div>
 

@@ -335,6 +335,7 @@ const OwnerFieldListPage = () => {
                                             <option value="football">Bóng đá</option>
                                             <option value="tennis">Tennis</option>
                                             <option value="badminton">Cầu lông</option>
+                                            <option value="pickleball">Pickleball</option>
                                             <option value="basketball">Bóng rổ</option>
                                             <option value="volleyball">Bóng chuyền</option>
                                             <option value="swimming">Bơi lội</option>

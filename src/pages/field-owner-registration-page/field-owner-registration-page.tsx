@@ -164,7 +164,6 @@ export default function FieldOwnerRegistrationPage() {
         facilityName: formData.facilityName,
         facilityLocation: formData.facilityLocation,
         facilityLocationCoordinates: formData.facilityLocationCoordinates,
-        supportedSports: formData.supportedSports,
         description: formData.description,
         contactPhone: formData.contactPhone,
         businessHours: formData.businessHours,

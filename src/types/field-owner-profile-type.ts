@@ -3,7 +3,6 @@ export interface FieldOwnerProfile {
     user: string; // or populated user id; UI can fetch populated user separately if needed
     facilityName: string;
     facilityLocation?: string;
-    supportedSports?: string[];
     description?: string;
     amenities?: string[];
     rating?: number;
@@ -23,7 +22,6 @@ export type CreateOwnerProfilePayload = Partial<
         |
             "facilityName" |
             "facilityLocation" |
-            "supportedSports" |
             "description" |
             "amenities" |
             "verificationDocument" |
@@ -39,7 +37,6 @@ export type UpdateOwnerProfilePayload = Partial<
         |
             "facilityName" |
             "facilityLocation" |
-            "supportedSports" |
             "description" |
             "amenities" |
             "verificationDocument" |

@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Building2, MapPin, Phone, Globe, Clock, Search } from "lucide-react"
-import { SportType } from "@/components/enums/ENUMS"
 import type { CreateRegistrationRequestPayload } from "@/features/field-owner-registration"
 import { Loading } from "@/components/ui/loading"
 
@@ -18,17 +17,6 @@ interface FacilityInfoStepProps {
   onFormDataChange: (data: Partial<CreateRegistrationRequestPayload & {
     facilityLocationCoordinates?: { lat: number; lng: number }
   }>) => void
-}
-
-const SPORT_LABELS: Record<string, string> = {
-  [SportType.FOOTBALL]: "Bóng đá",
-  [SportType.TENNIS]: "Quần vợt",
-  [SportType.BADMINTON]: "Cầu lông",
-  [SportType.PICKLEBALL]: "Pickleball",
-  [SportType.BASKETBALL]: "Bóng rổ",
-  [SportType.VOLLEYBALL]: "Bóng chuyền",
-  [SportType.SWIMMING]: "Bơi lội",
-  [SportType.GYM]: "Gym",
 }
 
 // Map constants
@@ -133,18 +121,6 @@ export function FacilityInfoStep({ formData, onFormDataChange }: FacilityInfoSte
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
-
-  const handleSportToggle = (sport: string) => {
-    const currentSports = formData.supportedSports || []
-    const newSports = currentSports.includes(sport)
-      ? currentSports.filter((s) => s !== sport)
-      : [...currentSports, sport]
-
-    onFormDataChange({
-      ...formData,
-      supportedSports: newSports,
-    })
-  }
 
   // Initialize map
   useEffect(() => {
@@ -384,28 +360,6 @@ export function FacilityInfoStep({ formData, onFormDataChange }: FacilityInfoSte
               </div>
             </div>
           )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">
-          Các môn thể thao hỗ trợ
-        </Label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {Object.entries(SPORT_LABELS).map(([key, label]) => (
-            <label
-              key={key}
-              className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={formData.supportedSports?.includes(key) || false}
-                onChange={() => handleSportToggle(key)}
-                className="w-4 h-4 text-primary focus:ring-primary"
-              />
-              <span className="text-sm">{label}</span>
-            </label>
-          ))}
         </div>
       </div>
 
