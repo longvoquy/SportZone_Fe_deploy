@@ -18,21 +18,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { PageWrapper } from "@/components/layouts/page-wrapper"
 import { FilterSidebar } from "./filter-sidebar"
-import { FavoriteSportsModal } from "@/components/common/favorite-sports-modal";
-import { getUserProfile, setFavouriteSports } from "@/features/user/userThunk";
+import { getUserProfile } from "@/features/user/userThunk";
 import { getFieldPinIconWithLabel } from "@/utils/fieldPinIcon";
 import { VIETNAM_CITIES, SPORT_TYPE_OPTIONS, PRICE_SORT_OPTIONS } from "@/utils/constant-value/constant";
-// Map sport IDs to Vietnamese labels for UI display
-const SPORT_LABELS_VN: Record<string, string> = {
-  football: "Bóng đá",
-  tennis: "Quần vợt",
-  badminton: "Cầu lông",
-  pickleball: "Pickleball",
-  basketball: "Bóng rổ",
-  volleyball: "Bóng chuyền",
-  swimming: "Bơi lội",
-  gym: "Phòng gym",
-};
+
 const FieldBookingPage = () => {
   const fieldsListRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
@@ -40,7 +29,6 @@ const FieldBookingPage = () => {
     (state) => state.field
   );
   const authUser = useAppSelector((state) => state.auth.user);
-  const favouriteSports = authUser?.favouriteSports || [];
 
   const [filters, setFilters] = useState({
     location: "",
@@ -48,7 +36,6 @@ const FieldBookingPage = () => {
     page: 1,
     limit: 10,
   });
-  const [isFilteringByFavorites, setIsFilteringByFavorites] = useState(false);
   const {
     loading: geolocationLoading,
     supported: geolocationSupported,
@@ -85,88 +72,8 @@ const FieldBookingPage = () => {
   const markersMapRef = useRef<Map<string, any>>(new Map());
   const fieldCardRefsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const [highlightedFieldId, setHighlightedFieldId] = useState<string | null>(null);
-  const [showFavoriteSportsModal, setShowFavoriteSportsModal] = useState(false);
-  // Track whether we've shown the modal for the current user in this session
-  const [modalShownOnce, setModalShownOnce] = useState(false);
   const user = useAppSelector((state) => state.auth.user);
   const isLoggedIn = !!user;
-
-  // Show modal if user is logged in and has no favouriteSports
-  useEffect(() => {
-    if (!isLoggedIn || modalShownOnce) return;
-
-    // Use a per-user key so different accounts get independent behavior
-    const userKey = user?.email || (user as any)?._id || null;
-    const storageKey = userKey ? `favoriteSportsModalShown:${userKey}` : `favoriteSportsModalShown:anon`;
-
-    try {
-      const alreadyShown = sessionStorage.getItem(storageKey) === '1';
-      if (alreadyShown) {
-        setModalShownOnce(true);
-        return;
-      }
-
-      if (!user?.favouriteSports || user.favouriteSports.length === 0) {
-        setShowFavoriteSportsModal(true);
-        setModalShownOnce(true);
-        try { sessionStorage.setItem(storageKey, '1'); } catch { }
-      }
-    } catch (e) {
-      // ignore storage errors
-    }
-  }, [isLoggedIn, user, modalShownOnce]);
-
-  const handleFavoriteSportsAccept = (selectedSports: string[]) => {
-    if (!user) return;
-    const userKey = user?.email || (user as any)?._id || null;
-    const storageKey = userKey ? `favoriteSportsModalShown:${userKey}` : `favoriteSportsModalShown:anon`;
-
-    dispatch(setFavouriteSports({ favouriteSports: selectedSports }))
-      .unwrap()
-      .then(() => {
-        // Refetch profile to update Redux state (defensive)
-        dispatch(getUserProfile());
-        // Update UI state to reflect new favourites immediately
-        setIsFilteringByFavorites(Boolean(selectedSports && selectedSports.length > 0));
-
-        // If user cleared all favourites, reset sport filters so the
-        // "Sân yêu thích" button and filters return to normal immediately
-        if (!selectedSports || selectedSports.length === 0) {
-          setSportFilter("all");
-          setFilters((prev) => {
-            const copy: any = { ...prev };
-            delete copy.sportTypes;
-            delete copy.sportType;
-            delete copy.type;
-            copy.page = 1;
-            return copy;
-          });
-        }
-
-        setShowFavoriteSportsModal(false);
-        try { sessionStorage.setItem(storageKey, '1'); } catch { }
-      })
-      .catch(() => {
-        setShowFavoriteSportsModal(false);
-      });
-  };
-
-  const handleFavoriteSportsModalClose = async () => {
-    // Close modal immediately
-    setShowFavoriteSportsModal(false);
-
-    // Refresh profile to get the latest favouriteSports from server
-    try {
-      const action: any = await dispatch(getUserProfile());
-      const payload = action?.payload || {};
-      const updatedFavs =
-        payload?.favouriteSports || payload?.favourite_sports || authUser?.favouriteSports || [];
-      setIsFilteringByFavorites(Boolean(updatedFavs && updatedFavs.length > 0));
-    } catch (err) {
-      // Fallback — rely on current authUser state
-      setIsFilteringByFavorites(Boolean(authUser?.favouriteSports && authUser?.favouriteSports.length > 0));
-    }
-  };
 
   const handleResetAllFilters = () => {
     setNameFilter("");
@@ -285,61 +192,6 @@ const FieldBookingPage = () => {
     }, 500);
     return () => clearTimeout(timeoutId);
   }, [dispatch, filters, isNearbyMode]);
-
-  // Auto-filter by favorite sports on mount
-  useEffect(() => {
-    if (
-      authUser &&
-      favouriteSports.length > 0 &&
-      !isFilteringByFavorites &&
-      sportFilter === "all" &&
-      !nameFilter &&
-      !locationFilter &&
-      !isNearbyMode
-    ) {
-      // Auto-enable favorite sports filter
-      setIsFilteringByFavorites(true);
-      // Do not restrict API results to favorite sports here; instead
-      // we'll prioritize favorite-sport fields client-side so other
-      // sports still appear after the favorite ones.
-      setFilters((prev) => ({ ...prev, page: 1 } as any));
-    }
-  }, [
-    authUser,
-    favouriteSports,
-    isFilteringByFavorites,
-    sportFilter,
-    nameFilter,
-    locationFilter,
-    isNearbyMode,
-  ]);
-
-  // Toggle favorite sports filter
-  const handleToggleFavoriteFilter = () => {
-    if (isFilteringByFavorites) {
-      // Turn off favorite filter
-      setIsFilteringByFavorites(false);
-      setSportFilter("all");
-      setFilters((prev) => {
-        const copy: any = { ...prev };
-        // ensure we don't keep any server-side favorite restriction
-        delete copy.sportTypes;
-        delete copy.sportType;
-        copy.page = 1;
-        return copy;
-      });
-    } else {
-      // Turn on favorite filter
-      if (favouriteSports.length > 0) {
-        setIsFilteringByFavorites(true);
-        setSportFilter("all");
-        // Do not add `sportTypes` to filters (which would ask the API
-        // to return only those sports). Instead, keep the full results
-        // and reorder client-side so favorite sports appear first.
-        setFilters((prev) => ({ ...prev, page: 1 } as any));
-      }
-    }
-  };
 
   // Apply client-side filters to nearby fields
   const applyFiltersToNearbyFields = (fields: any[]) => {
@@ -484,32 +336,10 @@ const FieldBookingPage = () => {
         }
       }
 
-      // Handle sport filtering - priority: manual selection > favorites
+      // Handle sport filtering
       let sportChanged = false;
-      if (
-        isFilteringByFavorites &&
-        favouriteSports.length > 0 &&
-        sportFilter === "all"
-      ) {
-        // Use favorite sports
-        const prevSportTypes = prevAny.sportTypes;
-        const sportTypesEqual =
-          Array.isArray(prevSportTypes) &&
-          prevSportTypes.length === favouriteSports.length &&
-          prevSportTypes.every(
-            (s: string, i: number) => s === favouriteSports[i]
-          );
-        if (!sportTypesEqual || prevAny.sportType || prevAny.type) {
-          // Do not set `sportTypes` server-side; clear any server-side
-          // sport filters so the API returns all fields. We'll prioritize
-          // favorites client-side instead.
-          delete copy.sportTypes;
-          delete copy.sportType;
-          delete copy.type;
-          sportChanged = true;
-        }
-      } else if (sportFilter !== "all") {
-        // User selected specific sport - override favorites
+      if (sportFilter !== "all") {
+        // User selected specific sport
         if (
           prevAny.sportType !== sportFilter ||
           prevAny.type !== sportFilter ||
@@ -518,9 +348,6 @@ const FieldBookingPage = () => {
           copy.type = sportFilter;
           copy.sportType = sportFilter;
           delete copy.sportTypes;
-          if (isFilteringByFavorites) {
-            setIsFilteringByFavorites(false);
-          }
           sportChanged = true;
         }
       } else {
@@ -575,8 +402,6 @@ const FieldBookingPage = () => {
     sportFilter,
     timeFilter,
     locationFilter,
-    isFilteringByFavorites,
-    favouriteSports,
   ]);
 
   const hasActiveFilters = !!(
@@ -761,34 +586,6 @@ const FieldBookingPage = () => {
     }
     return true;
   });
-
-  // If user enabled "filter by favorites" preference, group fields so
-  // all fields of each favourite sport appear together (in the order
-  // of `favouriteSports`), then append the remaining fields. This
-  // prevents interleaving (e.g., basketball, badminton, basketball).
-  if (isFilteringByFavorites && favouriteSports && favouriteSports.length > 0) {
-    const remaining = [...filteredTransformedFields];
-    const grouped: typeof filteredTransformedFields = [];
-
-    favouriteSports.forEach((favSport) => {
-      const favSportLower = (favSport || "").toLowerCase();
-      for (let i = remaining.length - 1; i >= 0; i--) {
-        const f = remaining[i];
-        const st = (f.sportType || "").toLowerCase();
-        if (st === favSportLower) {
-          // remove from remaining and push to grouped preserving original order
-          remaining.splice(i, 1);
-          grouped.unshift(f);
-        }
-      }
-    });
-
-    // grouped currently has favourites in reverse relative order due to unshift;
-    // reverse to restore original relative ordering within each sport.
-    grouped.reverse();
-
-    filteredTransformedFields = [...grouped, ...remaining];
-  }
 
   // Calculate filtered nearby fields count for display
   const filteredNearbyCount =
@@ -1059,24 +856,6 @@ const FieldBookingPage = () => {
                     z-index: 10;
                 }
             `}</style>
-      <FavoriteSportsModal
-        isOpen={showFavoriteSportsModal}
-        onClose={handleFavoriteSportsModalClose}
-        onAccept={handleFavoriteSportsAccept}
-        onClear={() => {
-          setIsFilteringByFavorites(false);
-          setShowFavoriteSportsModal(false);
-          try {
-            if (fieldsListRef.current) {
-              // Jump to top immediately when user clears favourites
-              fieldsListRef.current.scrollTo({ top: 0, behavior: 'auto' });
-            }
-          } catch (e) {
-            // ignore
-          }
-        }}
-        initialSelected={authUser?.favouriteSports || []}
-      />
       <NavbarDarkComponent />
       <PageWrapper>
         <div className="flex flex-row">
@@ -1210,40 +989,6 @@ const FieldBookingPage = () => {
                           </Button>
                         )}
                       </div>
-
-                      {/* (Tùy chọn) Nút sân yêu thích */}
-                      {authUser && (
-                        <div className="mt-2">
-                          <Button
-                            variant={isFilteringByFavorites ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => {
-                              if (!favouriteSports || favouriteSports.length === 0) {
-                                setShowFavoriteSportsModal(true);
-                                return;
-                              }
-                              if (isFilteringByFavorites) {
-                                setShowFavoriteSportsModal(true);
-                                return;
-                              }
-                              handleToggleFavoriteFilter();
-                            }}
-                            className="flex items-center gap-2"
-                            title={!favouriteSports || favouriteSports.length === 0
-                              ? "Chọn môn thể thao yêu thích"
-                              : isFilteringByFavorites
-                                ? "Chỉnh sửa sân yêu thích"
-                                : "Bật bộ lọc sân yêu thích"}
-                          >
-                            <Heart className={`w-4 h-4 ${isFilteringByFavorites ? "fill-current" : ""}`} />
-                            {isFilteringByFavorites
-                              ? "Đang hiển thị sân yêu thích"
-                              : (!favouriteSports || favouriteSports.length === 0
-                                ? "Thiết lập sân yêu thích"
-                                : "Sân yêu thích của tôi")}
-                          </Button>
-                        </div>
-                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       {!geolocationSupported && (
@@ -1261,17 +1006,6 @@ const FieldBookingPage = () => {
                         {filteredNearbyCount !== nearbyFields.length &&
                           ` (trong tổng số ${nearbyFields.length} sân)`}
                       </span>
-                    </div>
-                  )}
-                  {isFilteringByFavorites && favouriteSports.length > 0 && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
-                        <Heart className="w-4 h-4 fill-current" />
-                        <span>
-                          Đang hiển thị {favouriteSports.length} môn thể thao
-                          yêu thích: {favouriteSports.map(s => SPORT_LABELS_VN[s] || s).join(", ")}
-                        </span>
-                      </div>
                     </div>
                   )}
                 </div>

@@ -15,7 +15,6 @@ import {
 import {
     getUserProfile,
     updateUserProfile,
-    setFavouriteSports,
     setFavouriteCoaches,
     removeFavouriteCoaches,
     setFavouriteFields,
@@ -355,11 +354,6 @@ const authSlice = createSlice({
                 state.updateError = action.payload || { message: "Failed to update profile", status: "500" };
             })
 
-            // Set favourite sports
-            .addCase(setFavouriteSports.fulfilled, (state, action) => {
-                state.user = action.payload;
-                setCookie("user", JSON.stringify(action.payload));
-            })
             // Set favourite coaches
             .addCase(setFavouriteCoaches.fulfilled, (state, action) => {
                 state.user = action.payload;

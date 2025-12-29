@@ -26,7 +26,6 @@ export interface User {
     status: string
     isActive: boolean
     googleId?: string
-    favouriteSports?: string[]
     favouriteFields?: string[]
     favouriteCoaches?: string[]
     createdAt: string

@@ -2,10 +2,6 @@ import { BASE_URL } from "../../utils/constant-value/constant";
 
 export const GET_PROFILE_API = `${BASE_URL}/users/get-profile`;
 export const UPDATE_PROFILE_API = `${BASE_URL}/users/me`;
-export const SET_FAVOURITE_SPORTS_API = `${BASE_URL}/users/favourite-sports`;
-export const REMOVE_FAVOURITE_SPORTS_API = `${BASE_URL}/users/favourite-sports`;
-// Single favourite sport removal (append sportId)
-export const REMOVE_FAVOURITE_SPORT_API = (sportId: string) => `${BASE_URL}/users/favourite-sports/${sportId}`;
 export const SET_FAVOURITE_COACHES_API = `${BASE_URL}/users/favourite-coaches`;
 export const REMOVE_FAVOURITE_COACHES_API = `${BASE_URL}/users/favourite-coaches`;
 export const FORGOT_PASSWORD_API = `${BASE_URL}/users/forgot-password`;

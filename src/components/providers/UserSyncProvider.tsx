@@ -32,7 +32,7 @@ export const UserSyncProvider = ({ children }: { children: React.ReactNode }) =>
                 try {
                     await dispatch(validateSession()).unwrap();
 
-                    // Fetch full profile to ensure fields like favouriteSports are populated
+                    // Fetch full profile to ensure all user fields are populated
                     try {
                         await dispatch(getUserProfile() as any).unwrap();
 
