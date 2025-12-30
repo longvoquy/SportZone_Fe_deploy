@@ -2,14 +2,15 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { BookingState, ErrorResponse } from "../../types/booking-type";
 import {
     createFieldBooking,
+    createConsecutiveDaysBooking,
+    createWeeklyRecurringBooking,
+    parseBookingRequest,
     cancelFieldBooking,
     createSessionBooking,
     cancelSessionBooking,
-    getCoachBookings,
     getMyBookings,
     getMyInvoices,
     getUpcomingBooking,
-    getCoachSchedule,
     setCoachHoliday,
     createPayOSPayment,
 } from "./bookingThunk";
@@ -67,6 +68,58 @@ const bookingSlice = createSlice({
                 state.bookings.push(action.payload);
             })
 
+        // Create Consecutive Days Booking (Turn 1)
+        builder
+            .addCase(createConsecutiveDaysBooking.fulfilled, (state, action) => {
+                state.loadingBookings = false;
+                // Add all created bookings to the list
+                if (action.payload.bookings && Array.isArray(action.payload.bookings)) {
+                    state.bookings.push(...action.payload.bookings);
+                    // Set first booking as current
+                    if (action.payload.bookings.length > 0) {
+                        state.currentBooking = action.payload.bookings[0];
+                    }
+                }
+            })
+            .addCase(createConsecutiveDaysBooking.rejected, (state, action) => {
+                state.loadingBookings = false;
+                state.error = action.payload || { message: "Đã xảy ra lỗi", status: "500" };
+            })
+
+        // Create Weekly Recurring Booking (Turn 2)
+        builder
+            .addCase(createWeeklyRecurringBooking.fulfilled, (state, action) => {
+                state.loadingBookings = false;
+                // Add all created bookings to the list
+                if (action.payload.bookings && Array.isArray(action.payload.bookings)) {
+                    state.bookings.push(...action.payload.bookings);
+                    // Set first booking as current
+                    if (action.payload.bookings.length > 0) {
+                        state.currentBooking = action.payload.bookings[0];
+                    }
+                }
+            })
+            .addCase(createWeeklyRecurringBooking.rejected, (state, action) => {
+                state.loadingBookings = false;
+                state.error = action.payload || { message: "Da xay ra loi", status: "500" };
+            })
+
+        // Parse Booking Request (Turn 3 - AI Parsing)
+        // Note: parseBookingRequest doesn't modify state, data is handled in component
+        builder
+            .addCase(parseBookingRequest.pending, (state) => {
+                state.loadingBookings = true;
+                state.error = null;
+            })
+            .addCase(parseBookingRequest.fulfilled, (state) => {
+                state.loadingBookings = false;
+                // Parsed data is returned to component, no state update needed
+            })
+            .addCase(parseBookingRequest.rejected, (state, action) => {
+                state.loadingBookings = false;
+                state.error = action.payload || { message: "Khong the phan tich yeu cau", status: "500" };
+            })
+
 
         // Cancel Field Booking
         builder
@@ -112,12 +165,8 @@ const bookingSlice = createSlice({
             })
 
 
-        // Get Coach Bookings
-        builder
-            .addCase(getCoachBookings.fulfilled, (state, action) => {
-                state.loadingBookings = false;
-                state.bookings = action.payload;
-            })
+        // Get Coach Bookings - REMOVED (Use direct fetch in pages)
+
 
 
         // Get My Bookings
@@ -144,12 +193,8 @@ const bookingSlice = createSlice({
             })
 
 
-        // Get Coach Schedule
-        builder
-            .addCase(getCoachSchedule.fulfilled, (state, action) => {
-                state.loadingBookings = false;
-                state.coachSchedules = action.payload;
-            })
+        // Get Coach Schedule - REMOVED (Use direct fetch in pages)
+
 
 
         // Set Coach Holiday
@@ -183,12 +228,12 @@ const bookingSlice = createSlice({
                     action.type.endsWith("/pending") &&
                     [
                         createFieldBooking.typePrefix,
+                        createConsecutiveDaysBooking.typePrefix,
+                        createWeeklyRecurringBooking.typePrefix,
                         cancelFieldBooking.typePrefix,
                         createSessionBooking.typePrefix,
                         cancelSessionBooking.typePrefix,
-                        getCoachBookings.typePrefix,
                         getMyBookings.typePrefix,
-                        getCoachSchedule.typePrefix,
                         setCoachHoliday.typePrefix,
                     ].some((prefix) => action.type.startsWith(prefix)),
                 (state) => {

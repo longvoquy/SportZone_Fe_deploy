@@ -40,6 +40,7 @@ const CoachDetailPage = lazy(() => import("../pages/coach-detail-page/coach-deta
 // Field Pages
 const FieldBookingPage = lazy(() => import("../pages/field-list-page/list-page"));
 const FieldBookingFlowPage = lazy(() => import("../pages/field-booking-page/field-booking-page"));
+const FieldBookingAiPage = lazy(() => import("../pages/field-booking-ai-page/field-booking-ai-page"));
 const FieldCoachBookingPage = lazy(() => import("../pages/field-coach-booking-page/field-coach-booking-page"));
 const FieldCreatePage = lazy(() => import("../pages/field-owner-dashboard-page/create/field-create-page"));
 const FieldDetailPage = lazy(() => import("../pages/field-detail-page/field-detail-page"));
@@ -116,6 +117,7 @@ export const publicRoutes: RouteObject[] = [
   { path: "/fields", element: <FieldBookingPage /> },
   { path: "/fields/:id", element: <FieldDetailPage /> },
   { path: "/field-booking", element: <FieldBookingFlowPage /> },
+  { path: "/field-booking-ai", element: <FieldBookingAiPage /> },
   { path: "/field-coach", element: <FieldCoachBookingPage /> },
 
   // Coach Discovery (Public)

@@ -39,6 +39,8 @@ interface AuthState {
     _id: string | null;
     user: User | null; // Use the extended User type here
     token: string | null; // kept for backward-compatibility but unused with cookie auth
+    authMethod: 'cookie' | 'bearer' | null; // NEW: Track authentication method
+    securityWarning: string | null; // NEW: Security warning for fallback mode
     loading: boolean;
     error: ErrorResponse | null;
     verifyStatus?: "pending" | "success" | "error";
@@ -90,10 +92,18 @@ const storedUser = getStoredUser();
 // Debug current auth state
 logger.debug("Auth initialState - User:", storedUser?.fullName);
 
+// Validate authMethod from sessionStorage
+const storedAuthMethod = sessionStorage.getItem('auth_method');
+const validAuthMethod = (storedAuthMethod === 'cookie' || storedAuthMethod === 'bearer')
+    ? storedAuthMethod
+    : null;
+
 const initialState: AuthState = {
     _id: storedUser?._id || null,
     user: storedUser,
     token: null,
+    authMethod: validAuthMethod, // Type-safe validated value
+    securityWarning: null,
     loading: false,
     error: null,
     verifyStatus: undefined,
@@ -190,14 +200,19 @@ const authSlice = createSlice({
             // Xử lý các action từ authThunk
             .addCase(signInWithEmailAndPassword.fulfilled, (state, action) => {
                 state.loading = false;
-                const user = action.payload?.user;
+                const { user, authMethod, securityWarning } = action.payload;
+
                 if (user) {
                     state.user = user;
-                    state.token = null; // cookie-based auth: no token stored client-side
-                    const rememberMe = Boolean((action as any).meta?.arg?.rememberMe);
-                    const target = rememberMe ? localStorage : sessionStorage;
-                    target.setItem("user", JSON.stringify(user));
-                    // Sync to cookie
+                    state.token = null; // deprecated field
+                    state.authMethod = authMethod;
+                    state.securityWarning = securityWarning || null;
+
+                    // Store ONLY in sessionStorage (not localStorage for security)
+                    sessionStorage.setItem("user", JSON.stringify(user));
+                    sessionStorage.setItem("auth_method", authMethod);
+
+                    // Also sync to cookie for compatibility
                     setCookie("user", JSON.stringify(user));
                 } else {
                     state.error = { message: "Missing user in login response", status: "500" } as any;
@@ -206,14 +221,19 @@ const authSlice = createSlice({
 
             .addCase(signInWithGoogle.fulfilled, (state, action) => {
                 state.loading = false;
-                const user = (action.payload as any)?.user;
+                const { user, authMethod, securityWarning } = action.payload;
+
                 if (user) {
                     state.user = user;
                     state.token = null;
-                    const rememberMe = Boolean((action as any).meta?.arg?.rememberMe);
-                    const target = rememberMe ? localStorage : sessionStorage;
-                    target.setItem("user", JSON.stringify(user));
-                    // Sync to cookie
+                    state.authMethod = authMethod;
+                    state.securityWarning = securityWarning || null;
+
+                    // Store ONLY in sessionStorage (not localStorage for security)
+                    sessionStorage.setItem("user", JSON.stringify(user));
+                    sessionStorage.setItem("auth_method", authMethod);
+
+                    // Also sync to cookie for compatibility
                     setCookie("user", JSON.stringify(user));
                 } else {
                     state.error = { message: "Missing user in google login response", status: "500" } as any;
@@ -226,12 +246,24 @@ const authSlice = createSlice({
 
             // server-side logout thunk (must be before addMatcher calls)
             .addCase(logout.fulfilled, (state) => {
+                // Reset all auth state
                 state.user = null;
                 state.token = null;
+                state.authMethod = null;
+                state.securityWarning = null;
+
+                // Clear user auth cookie
                 clearUserAuth();
+
                 try {
+                    // Clear user data from storage
                     sessionStorage.removeItem("user");
                     localStorage.removeItem("user");
+
+                    // Clear Bearer token auth data (for fallback mode)
+                    sessionStorage.removeItem("auth_access_token");
+                    sessionStorage.removeItem("auth_refresh_token");
+                    sessionStorage.removeItem("auth_method");
 
                     // Clean up chat state and WebSocket
                     logger.debug('Cleaning up chat on logout');

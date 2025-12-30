@@ -39,7 +39,28 @@ import {
     UPDATE_FIELD_AMENITIES_API,
     GET_MY_FIELDS_API,
     GET_MY_FIELDS_BOOKINGS_API,
+    GENERATE_FIELD_AI_API,
 } from "./fieldAPI";
+
+// Generate field from AI
+export const generateFieldFromAI = createAsyncThunk<
+    CreateFieldPayload,
+    string,
+    { rejectValue: ErrorResponse }
+>("field/generateFieldFromAI", async (description, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.post(GENERATE_FIELD_AI_API, { description });
+        logger.debug("Generate field AI response:", response.data);
+        return response.data.data;
+    } catch (error: any) {
+        const errorResponse: ErrorResponse = {
+            message: error.response?.data?.message || error.message || "Failed to generate field from AI",
+            status: error.response?.status?.toString() || "500",
+            errors: error.response?.data?.errors,
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
 
 // Map API Field shape (fieldAPI.md) to app Field type used in UI
 const mapApiFieldToAppField = (apiField: any): import("../../types/field-type").Field => {
@@ -559,7 +580,7 @@ export const updateFieldWithImages = createAsyncThunk<
         }
 
 
-        const response = await axiosPrivate.put(UPDATE_FIELD_WITH_IMAGES_API(id), formData);
+        const response = await axiosPrivate.patch(UPDATE_FIELD_WITH_IMAGES_API(id), formData);
         logger.debug("Update field with images response:", response.data);
 
         const raw = response.data;

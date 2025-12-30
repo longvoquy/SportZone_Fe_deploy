@@ -23,6 +23,9 @@ import {
 } from "../../features/authentication/authThunk";
 import logger from "../../utils/logger";
 
+// Security Warning Component
+import { SecurityWarning } from "@/components/auth/SecurityWarning";
+
 export default function AuthenticationPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -370,6 +373,9 @@ export default function AuthenticationPage() {
                 : "Tạo tài khoản mới của bạn"}
             </p> */}
           </div>
+
+          {/* Security Warning - Shows when user is in Bearer token fallback mode */}
+          <SecurityWarning />
 
           {/* Form */}
           <div className="space-y-6">

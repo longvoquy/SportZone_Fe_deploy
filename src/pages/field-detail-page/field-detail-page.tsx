@@ -9,7 +9,7 @@ import { getFieldById } from "@/features/field/fieldThunk"
 import { NavbarDarkComponent } from "@/components/header/navbar-dark-component"
 import { FooterComponent } from "@/components/footer/footer-component"
 import { PageWrapper } from "@/components/layouts/page-wrapper"
-import { ChevronLeft, ChevronRight, MapPin, Share2, Star, CalendarDays, AlertCircle, MessageCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Share2, Star, CalendarDays, AlertCircle, MessageCircle, Sparkles, Bot } from "lucide-react"
 import L from "leaflet"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Loading } from "@/components/ui/loading"
@@ -751,6 +751,35 @@ const FieldDetailPage: React.FC = () => {
                           className="w-full bg-green-600 hover:bg-green-700 text-white py-2 h-auto"
                         >
                           Đặt sân ngay
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    {/* AI Booking card */}
+                    <Card className="shadow-lg border-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 border-l-4 border-indigo-500 overflow-hidden relative group transition-all hover:shadow-xl">
+                      <div className="absolute top-0 right-0 -mt-4 -mr-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Sparkles className="h-24 w-24 text-indigo-600" />
+                      </div>
+                      <CardHeader className="pb-2 relative z-10">
+                        <CardTitle className="text-sm font-bold text-indigo-700 flex items-center gap-2">
+                          <Bot className="h-4 w-4" />
+                          TIẾT KIỆM THỜI GIAN VỚI AI
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3 relative z-10">
+                        <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
+                          Sử dụng trí tuệ nhân tạo để đặt nhiều khung giờ, nhiều ngày liên tục hoặc định kỳ chỉ bằng một câu lệnh tự nhiên.
+                        </p>
+                        <Button
+                          onClick={() =>
+                            navigate("/field-booking-ai", {
+                              state: { fieldId: currentField.id },
+                            })
+                          }
+                          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md border-0 group/btn h-9 text-xs"
+                        >
+                          <Sparkles className="mr-2 h-3.5 w-3.5 group-hover/btn:animate-pulse" />
+                          Đặt nhiều sân bằng AI
                         </Button>
                       </CardContent>
                     </Card>

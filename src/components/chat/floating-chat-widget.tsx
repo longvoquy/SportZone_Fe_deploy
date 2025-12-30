@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hook';
 import { setWidgetOpen, setWidgetView } from '@/features/chat/chatSlice';
 import { getChatRooms, getUnreadCount, getFieldOwnerChatRooms, getCoachChatRooms } from '@/features/chat/chatThunk';
-import { webSocketService } from '@/features/chat/websocket.service';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle, X } from 'lucide-react';
 import ConversationList from './conversation-list';

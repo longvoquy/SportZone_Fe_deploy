@@ -2,13 +2,13 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type {
     Booking,
     SessionBookingResponse,
-    CoachSchedule,
     CreateFieldBookingPayload,
+    CreateConsecutiveDaysBookingPayload,
+    CreateWeeklyRecurringPayload,
     CreateSessionBookingPayload,
     CancelBookingPayload,
     CancelSessionBookingPayload,
     SetCoachHolidayPayload,
-    GetCoachScheduleParams,
     GetMyBookingsParams,
     MyBookingsResponse,
     MyInvoicesResponse,
@@ -17,18 +17,18 @@ import type {
     CreateCombinedBookingPayload,
 } from "../../types/booking-type";
 import axiosPrivate from "../../utils/axios/axiosPrivate";
-import axiosPublic from "../../utils/axios/axiosPublic";
 import logger from "../../utils/logger";
 import {
     CREATE_FIELD_BOOKING_API,
+    CREATE_CONSECUTIVE_DAYS_BOOKING_API,
+    CREATE_WEEKLY_RECURRING_BOOKING_API,
+    PARSE_BOOKING_REQUEST_API,
     CANCEL_FIELD_BOOKING_API,
     CREATE_SESSION_BOOKING_API,
     CANCEL_SESSION_BOOKING_API,
-    GET_COACH_BOOKINGS_API,
     GET_MY_BOOKINGS_API,
     GET_MY_INVOICES_API,
     GET_UPCOMING_BOOKING_API,
-    GET_COACH_SCHEDULE_API,
     SET_COACH_HOLIDAY_API,
     CREATE_COMBINED_BOOKING_API,
     CREATE_PAYOS_PAYMENT_API,
@@ -106,6 +106,75 @@ export const createFieldBooking = createAsyncThunk<
         logger.error("Error creating field booking:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to create field booking",
+            status: error.response?.status?.toString() || "500",
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+/**
+ * Create consecutive days booking (Turn 1 - Recurring Booking Feature)
+ * Book same court for multiple consecutive days
+ */
+export const createConsecutiveDaysBooking = createAsyncThunk<
+    { bookings: Booking[]; summary: { totalBookings: number; totalAmount: number; dateRange: string } },
+    CreateConsecutiveDaysBookingPayload,
+    { rejectValue: ErrorResponse & { conflicts?: Array<{ date: string; reason: string }> } }
+>("booking/createConsecutiveDaysBooking", async (payload, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.post(CREATE_CONSECUTIVE_DAYS_BOOKING_API, payload);
+        return response.data;
+    } catch (error: any) {
+        logger.error("Error creating consecutive days booking:", error);
+        const errorResponse = {
+            message: error.response?.data?.message || error.message || "Failed to create consecutive days booking",
+            status: error.response?.status?.toString() || "500",
+            conflicts: error.response?.data?.conflicts || undefined,
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+/**
+ * Create weekly recurring booking (Turn 2 - Recurring Booking Feature)
+ * Book specific weekdays for multiple weeks
+ * Example: Book every Monday and Wednesday for 4 weeks
+ */
+export const createWeeklyRecurringBooking = createAsyncThunk<
+    { bookings: Booking[]; summary: { totalBookings: number; totalAmount: number; pattern: string; weekdays: string[]; numberOfWeeks: number } },
+    CreateWeeklyRecurringPayload,
+    { rejectValue: ErrorResponse & { conflicts?: Array<{ date: string; reason: string }> } }
+>("booking/createWeeklyRecurringBooking", async (payload, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.post(CREATE_WEEKLY_RECURRING_BOOKING_API, payload);
+        return response.data;
+    } catch (error: any) {
+        logger.error("Error creating weekly recurring booking:", error);
+        const errorResponse = {
+            message: error.response?.data?.message || error.message || "Failed to create weekly recurring booking",
+            status: error.response?.status?.toString() || "500",
+            conflicts: error.response?.data?.conflicts || undefined,
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+/**
+ * Parse natural language booking request with AI (Turn 3)
+ * Example: "Đặt sân từ thứ 2 đến thứ 6 tuần này, 9h-11h" → structured data
+ */
+export const parseBookingRequest = createAsyncThunk<
+    any, // Parsed booking data
+    { query: string; fieldId: string },
+    { rejectValue: ErrorResponse }
+>("booking/parseBookingRequest", async (payload, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.post(PARSE_BOOKING_REQUEST_API, payload);
+        return response.data.data; // Backend returns { success: true, data: parsedData }
+    } catch (error: any) {
+        logger.error("Error parsing booking request:", error);
+        const errorResponse = {
+            message: error.response?.data?.message || error.message || "Failed to parse booking request",
             status: error.response?.status?.toString() || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);
@@ -209,30 +278,6 @@ export const createCombinedBooking = createAsyncThunk<
 });
 
 /**
- * Get coach bookings
- */
-export const getCoachBookings = createAsyncThunk<
-    Booking[],
-    string,
-    { rejectValue: ErrorResponse }
->("booking/getCoachBookings", async (coachId, thunkAPI) => {
-    try {
-
-        const response = await axiosPublic.get(GET_COACH_BOOKINGS_API(coachId));
-
-
-        return response.data;
-    } catch (error: any) {
-        logger.error("Error getting coach bookings:", error);
-        const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to get coach bookings",
-            status: error.response?.status?.toString() || "500",
-        };
-        return thunkAPI.rejectWithValue(errorResponse);
-    }
-});
-
-/**
  * Get my bookings
  */
 export const getMyBookings = createAsyncThunk<
@@ -297,31 +342,6 @@ export const getMyBookings = createAsyncThunk<
         logger.error("Error getting my bookings:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Failed to get my bookings",
-            status: error.response?.status?.toString() || "500",
-        };
-        return thunkAPI.rejectWithValue(errorResponse);
-    }
-});
-
-/**
- * Get coach schedule by date range
- */
-export const getCoachSchedule = createAsyncThunk<
-    CoachSchedule[],
-    GetCoachScheduleParams,
-    { rejectValue: ErrorResponse }
->("booking/getCoachSchedule", async ({ coachId, startDate, endDate }, thunkAPI) => {
-    try {
-
-        const url = `${GET_COACH_SCHEDULE_API(coachId)}?startDate=${startDate}&endDate=${endDate}`;
-        const response = await axiosPublic.get(url);
-
-
-        return response.data;
-    } catch (error: any) {
-        logger.error("Error getting coach schedule:", error);
-        const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to get coach schedule",
             status: error.response?.status?.toString() || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);
@@ -427,68 +447,6 @@ export const createCoachBookingV2 = createAsyncThunk<
 });
 
 /**
- * Get coach bank account
- */
-export const getCoachBankAccount = createAsyncThunk<
-    any,
-    string,
-    { rejectValue: ErrorResponse }
->("booking/getCoachBankAccount", async (coachId, thunkAPI) => {
-    try {
-
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        const response = await fetch(`${apiUrl}/coaches/${coachId}/bank-account`);
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch bank account');
-        }
-
-        const result = await response.json();
-        const bankAccount = result?.data || result;
-
-        return bankAccount;
-    } catch (error: any) {
-        logger.error("Error getting coach bank account:", error);
-        const errorResponse: ErrorResponse = {
-            message: error?.message || "Failed to get coach bank account",
-            status: error?.response?.status?.toString() || "500",
-        };
-        return thunkAPI.rejectWithValue(errorResponse);
-    }
-});
-
-/**
- * Get coach available slots for a specific date
- */
-export const getCoachAvailableSlots = createAsyncThunk<
-    any[],
-    { coachId: string; date: string },
-    { rejectValue: ErrorResponse }
->("booking/getCoachAvailableSlots", async ({ coachId, date }, thunkAPI) => {
-    try {
-
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        const response = await fetch(`${apiUrl}/coaches/${coachId}/slots?date=${date}`);
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch available slots');
-        }
-
-        const result = await response.json();
-        const slots = Array.isArray(result) ? result : (result?.data || []);
-
-        return slots;
-    } catch (error: any) {
-        logger.error("Error getting coach available slots:", error);
-        const errorResponse: ErrorResponse = {
-            message: error?.message || "Failed to get coach available slots",
-            status: error?.response?.status?.toString() || "500",
-        };
-        return thunkAPI.rejectWithValue(errorResponse);
-    }
-});
-
-/**
  * Create PayOS payment link for existing booking
  * Returns checkout URL to redirect user for payment
  */
@@ -510,7 +468,7 @@ export const createPayOSPayment = createAsyncThunk<
 
         if (!paymentData.checkoutUrl) {
             logger.error('PayOS Response missing checkoutUrl:', paymentData);
-            throw new Error('Không nhận được link thanh toán từ server');
+            throw new Error('Khong nhan duoc link thanh toan tu server');
         }
 
         return {
@@ -521,7 +479,60 @@ export const createPayOSPayment = createAsyncThunk<
     } catch (error: any) {
         logger.error("Error creating PayOS payment:", error);
         const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Không thể tạo link thanh toán PayOS",
+            message: error.response?.data?.message || error.message || "Khong the tao link thanh toan PayOS",
+            status: error.response?.status?.toString() || "500",
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+// ============================================================================
+// TURN 4: RECURRING GROUP MANAGEMENT
+// ============================================================================
+
+import {
+    GET_RECURRING_GROUP_API,
+    CANCEL_RECURRING_GROUP_API,
+} from "./bookingAPI";
+
+/**
+ * Turn 4: Get all bookings in a recurring group
+ */
+export const getRecurringGroup = createAsyncThunk<
+    { groupId: string; totalBookings: number; bookings: Booking[] },
+    string, // groupId
+    { rejectValue: ErrorResponse }
+>("booking/getRecurringGroup", async (groupId, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.get(GET_RECURRING_GROUP_API(groupId));
+        return response.data;
+    } catch (error: any) {
+        logger.error("Error getting recurring group:", error);
+        const errorResponse: ErrorResponse = {
+            message: error.response?.data?.message || error.message || "Failed to get recurring group",
+            status: error.response?.status?.toString() || "500",
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+/**
+ * Turn 4: Cancel all bookings in a recurring group
+ */
+export const cancelRecurringGroup = createAsyncThunk<
+    { success: boolean; cancelledCount: number; totalInGroup: number; message: string },
+    { groupId: string; cancellationReason?: string },
+    { rejectValue: ErrorResponse }
+>("booking/cancelRecurringGroup", async ({ groupId, cancellationReason }, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.patch(CANCEL_RECURRING_GROUP_API(groupId), {
+            cancellationReason
+        });
+        return response.data;
+    } catch (error: any) {
+        logger.error("Error cancelling recurring group:", error);
+        const errorResponse: ErrorResponse = {
+            message: error.response?.data?.message || error.message || "Failed to cancel recurring group",
             status: error.response?.status?.toString() || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);

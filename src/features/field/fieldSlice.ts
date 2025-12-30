@@ -17,6 +17,7 @@ import {
     getFieldAmenities,
     updateFieldAmenities,
     getMyFieldsBookings,
+    generateFieldFromAI,
 } from "./fieldThunk";
 
 interface FieldState {
@@ -48,6 +49,7 @@ interface FieldState {
     priceSchedulingLoading: boolean;
     amenitiesLoading: boolean;
     fieldOwnerBookingsLoading: boolean;
+    generateAiLoading: boolean;
 
     // Error states
     error: ErrorResponse | null;
@@ -79,6 +81,7 @@ const initialState: FieldState = {
     priceSchedulingLoading: false,
     amenitiesLoading: false,
     fieldOwnerBookingsLoading: false,
+    generateAiLoading: false,
     error: null,
     createError: null,
     createWithImagesError: null,
@@ -377,6 +380,19 @@ const fieldSlice = createSlice({
             .addCase(getMyFieldsBookings.rejected, (state, action) => {
                 state.fieldOwnerBookingsLoading = false;
                 state.fieldOwnerBookingsError = action.payload || { message: "Unknown error", status: "500" };
+            })
+            // Generate Field AI
+            .addCase(generateFieldFromAI.pending, (state) => {
+                state.generateAiLoading = true;
+                state.error = null;
+            })
+            .addCase(generateFieldFromAI.fulfilled, (state) => {
+                state.generateAiLoading = false;
+                state.error = null;
+            })
+            .addCase(generateFieldFromAI.rejected, (state, action) => {
+                state.generateAiLoading = false;
+                state.error = action.payload || { message: "Unknown error", status: "500" };
             });
     },
 });

@@ -28,6 +28,23 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
+// Request interceptor: Auto-attach Bearer token if using fallback mode
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Only add Authorization header if cookies are NOT being used
+    const hasCookie = document.cookie.includes('access_token');
+
+    if (!hasCookie) {
+      const token = sessionStorage.getItem('auth_access_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 axiosInstance.interceptors.response.use(
   (response) => {
@@ -57,11 +74,43 @@ axiosInstance.interceptors.response.use(
       try {
         // Try to refresh the token
         const BASE_URL = import.meta.env.VITE_API_URL;
-        await axios.post(
-          `${BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
+
+        // Detect auth method: cookie vs bearer token
+        const hasCookie = document.cookie.includes('access_token') || document.cookie.includes('refresh_token');
+
+        if (hasCookie) {
+          // Cookie-based refresh (primary flow)
+          await axios.post(
+            `${BASE_URL}/auth/refresh`,
+            {},
+            { withCredentials: true }
+          );
+        } else {
+          // Bearer token refresh (fallback flow)
+          const refreshToken = sessionStorage.getItem('auth_refresh_token');
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+
+          const response = await axios.post(
+            `${BASE_URL}/auth/refresh`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${refreshToken}`,
+                'X-Client-Type': 'web'
+              }
+            }
+          );
+
+          // Update tokens in sessionStorage if returned in response
+          if (response.data?.accessToken) {
+            sessionStorage.setItem('auth_access_token', response.data.accessToken);
+          }
+          if (response.data?.refreshToken) {
+            sessionStorage.setItem('auth_refresh_token', response.data.refreshToken);
+          }
+        }
 
         processQueue(null, "refreshed");
         isRefreshing = false;
@@ -72,14 +121,18 @@ axiosInstance.interceptors.response.use(
         processQueue(refreshError, null);
         isRefreshing = false;
 
+        // Clear both cookie and sessionStorage auth state
+        sessionStorage.removeItem('auth_access_token');
+        sessionStorage.removeItem('auth_refresh_token');
+        sessionStorage.removeItem('user');
+
         // Only redirect to auth if there was actually a stored user session
         // Anonymous users should NOT be redirected to /auth on 401 errors
-        const hadStoredUser = localStorage.getItem("user") || sessionStorage.getItem("user");
+        const hadStoredUser = sessionStorage.getItem("user");
         if (hadStoredUser) {
           // Clear any persisted client-side user state before forcing re-auth
           try {
             localStorage.removeItem("user");
-            sessionStorage.removeItem("user");
           } catch {
             // ignore storage errors
           }

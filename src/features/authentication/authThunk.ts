@@ -10,23 +10,55 @@ import axiosPublic from "../../utils/axios/axiosPublic";
 import axiosPrivate from "../../utils/axios/axiosPrivate";
 import { LOGIN_API, REGISTER_API, GOOGLE_LOGIN_API, LOGOUT_API, VALIDATE_SESSION_API, REFRESH_TOKEN_API } from "./authAPI";
 import logger from "@/utils/logger";
+import { detectCookieSupport } from "@/utils/cookieDetection";
 
 export const signInWithEmailAndPassword = createAsyncThunk<
-    Pick<AuthResponse, "user">,
+    Pick<AuthResponse, "user"> & { authMethod: 'cookie' | 'bearer'; securityWarning?: string },
     LoginPayload,
     { rejectValue: ErrorResponse }
 >("auth/login", async (payload, thunkAPI) => {
     try {
-        const response = await axiosPublic.post(LOGIN_API, payload);
+        // 1. Detect cookie support
+        logger.debug("Detecting cookie support...");
+        const cookieCheck = await detectCookieSupport();
+        logger.debug("Cookie support result:", cookieCheck);
 
-        logger.debug("Login response data:", response.data);
+        if (cookieCheck.supported) {
+            // Primary flow: Cookie-based auth
+            logger.debug("Using cookie-based authentication");
+            const response = await axiosPublic.post(LOGIN_API, payload);
+            const raw = response?.data?.data ?? response?.data;
+            const user = raw?.user ?? raw?.data?.user ?? raw?.result?.user ?? null;
 
-        const raw = response?.data?.data ?? response?.data;
-        const user = raw?.user ?? raw?.data?.user ?? raw?.result?.user ?? null;
-        if (!user) {
-            throw new Error("Invalid login response: missing user");
+            if (!user) {
+                throw new Error("Invalid login response: missing user");
+            }
+
+            return { user, authMethod: 'cookie' as const };
+        } else {
+            // Fallback flow: Bearer token (for users who block cookies)
+            logger.warn("Cookie blocked, using fallback Bearer token authentication");
+            logger.debug("Cookie block reason:", cookieCheck.reason);
+
+            const response = await axiosPublic.post('/auth/login-fallback', payload);
+            const raw = response?.data?.data ?? response?.data;
+            const user = raw?.user ?? null;
+
+            if (!user || !raw.accessToken) {
+                throw new Error("Invalid fallback login response: missing user or tokens");
+            }
+
+            // Store tokens in sessionStorage (NOT localStorage for security)
+            sessionStorage.setItem('auth_access_token', raw.accessToken);
+            sessionStorage.setItem('auth_refresh_token', raw.refreshToken);
+            logger.debug("Tokens stored in sessionStorage");
+
+            return {
+                user,
+                authMethod: 'bearer' as const,
+                securityWarning: raw.securityWarning
+            };
         }
-        return { user } as Pick<AuthResponse, "user">;
     } catch (error: any) {
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Login failed",
@@ -58,23 +90,59 @@ export const signUpWithEmailAndPassword = createAsyncThunk<
 
 // Google 
 export const signInWithGoogle = createAsyncThunk<
-    Pick<AuthResponse, "user">,
+    Pick<AuthResponse, "user"> & { authMethod: 'cookie' | 'bearer'; securityWarning?: string },
     { token: string; avatar?: string; rememberMe?: boolean },
     { rejectValue: ErrorResponse }
 >("auth/google", async (payload, thunkAPI) => {
     try {
-        const response = await axiosPublic.post(GOOGLE_LOGIN_API, {
-            token: payload.token,
-            avatar: payload.avatar,
-            rememberMe: payload.rememberMe,
-        });
+        // 1. Detect cookie support (same as email/password login)
+        logger.debug("Google login: Detecting cookie support...");
+        const cookieCheck = await detectCookieSupport();
+        logger.debug("Google login cookie support result:", cookieCheck);
 
-        const raw = response?.data?.data ?? response?.data;
-        const user = raw?.user ?? raw?.data?.user ?? raw?.result?.user ?? null;
-        if (!user) {
-            throw new Error("Invalid google login response: missing user");
+        if (cookieCheck.supported) {
+            // Primary flow: Cookie-based Google auth
+            logger.debug("Using cookie-based Google authentication");
+            const response = await axiosPublic.post(GOOGLE_LOGIN_API, {
+                token: payload.token,
+                avatar: payload.avatar,
+                rememberMe: payload.rememberMe,
+            });
+
+            const raw = response?.data?.data ?? response?.data;
+            const user = raw?.user ?? raw?.data?.user ?? null;
+            if (!user) {
+                throw new Error("Invalid google login response: missing user");
+            }
+
+            return { user, authMethod: 'cookie' as const };
+        } else {
+            // Fallback flow: Cookies blocked - inform user
+            logger.warn("❌ Cookie blocked for Google login");
+            logger.warn("Reason:", cookieCheck.reason);
+
+            // Vẫn thử login (BE sẽ set cookie) nhưng mark là bearer mode để hiện warning
+            const response = await axiosPublic.post(GOOGLE_LOGIN_API, {
+                token: payload.token,
+                avatar: payload.avatar,
+                rememberMe: payload.rememberMe,
+            });
+
+            const raw = response?.data?.data ?? response?.data;
+            const user = raw?.user ?? null;
+
+            if (!user) {
+                throw new Error("Invalid google login response: missing user");
+            }
+
+            // Return với bearer mode để trigger SecurityWarning
+            // Note: BE vẫn set cookies nhưng browser sẽ block
+            return {
+                user,
+                authMethod: 'bearer' as const, // Mark as bearer để hiện warning
+                securityWarning: 'Trình duyệt của bạn đang chặn cookies. Để đăng nhập Google hoạt động tốt nhất, vui lòng bật cookies trong cài đặt trình duyệt.'
+            };
         }
-        return { user } as Pick<AuthResponse, "user">;
     } catch (error: any) {
         return thunkAPI.rejectWithValue({
             message: error.response?.data?.message || error.message || "Google login failed",

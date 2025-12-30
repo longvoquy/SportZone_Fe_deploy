@@ -21,6 +21,10 @@ import {
     GalleryCard,
     LocationCard
 } from '@/pages/field-owner-dashboard-page/create/component/field-create';
+import { AiFieldGenerationModal } from '@/pages/field-owner-dashboard-page/create/component/field-create/AiFieldGenerationModal';
+import { generateFieldFromAI } from '@/features/field/fieldThunk';
+import { Wand2 } from 'lucide-react'; // Import magic wand icon
+
 export default function FieldCreatePage() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -42,6 +46,69 @@ export default function FieldCreatePage() {
         basePrice: '',
         numberOfCourts: 1
     });
+
+    // AI Generation State
+    const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+    // const [aiDescription, setAiDescription] = useState(''); // Removed, using modal now
+    const { generateAiLoading } = useAppSelector((state) => state.field);
+
+    const handleAiGenerate = async (prompt: string) => {
+        if (!prompt || !prompt.trim()) {
+            CustomFailedToast('Vui lòng nhập thông tin mô tả sân.');
+            return;
+        }
+
+        try {
+            const aiData = await dispatch(generateFieldFromAI(prompt)).unwrap();
+            console.log('AI Data Received in Component:', aiData);
+
+            // Intelligent Merge (Exclude Location, Images, Amenities)
+            setFormData(prev => ({
+                ...prev,
+                name: aiData.name || prev.name,
+                sportType: aiData.sportType?.toLowerCase() || prev.sportType, // Ensure lowercase for select match
+                description: aiData.description || prev.description,
+                basePrice: aiData.basePrice ? String(aiData.basePrice) : prev.basePrice,
+                slotDuration: aiData.slotDuration || prev.slotDuration,
+                minSlots: aiData.minSlots || prev.minSlots,
+                maxSlots: aiData.maxSlots || prev.maxSlots,
+                numberOfCourts: aiData.numberOfCourts || prev.numberOfCourts,
+                // Overwrite Operating Hours if AI returned them
+                operatingHours: aiData.operatingHours?.length > 0 ? aiData.operatingHours : prev.operatingHours,
+                // Overwrite Price Ranges if AI returned them
+                priceRanges: aiData.priceRanges?.length > 0 ? aiData.priceRanges : prev.priceRanges
+            }));
+
+            // Handle generated rules
+            if (aiData.rules && aiData.rules.length > 0) {
+                setRules(aiData.rules);
+            }
+
+            // Handle generated operating hours visualization
+            if (aiData.operatingHours?.length > 0) {
+                const newSelectedDays: string[] = [];
+                const newAvailability: Record<string, boolean> = {};
+
+                aiData.operatingHours.forEach(oh => {
+                    if (!newSelectedDays.includes(oh.day)) {
+                        newSelectedDays.push(oh.day);
+                        newAvailability[oh.day] = true;
+                    }
+                });
+
+                setSelectedDays(newSelectedDays);
+                setDayAvailability(newAvailability);
+            }
+
+            CustomSuccessToast('Dữ liệu đã được điền tự động từ AI!');
+            setIsAiDialogOpen(false);
+            // setAiDescription(''); // Clear input
+
+        } catch (error: any) {
+            CustomFailedToast(error.message || 'Không thể tạo thông tin từ AI');
+        }
+    };
+
 
     // Location coordinates state
     const [locationData, setLocationData] = useState<FieldLocation>({
@@ -490,195 +557,215 @@ export default function FieldCreatePage() {
     };
 
     return (
-        <FieldOwnerDashboardLayout>
-            <div className="min-h-screen bg-background-secondary py-8">
-                <div className="max-w-7xl mx-auto space-y-12">
-                    {/* Basic Info Section */}
-                    <div id="section-basic">
-                        <BasicInfoCard
-                            formData={formData}
-                            onInputChange={handleInputChange}
-                        />
-                    </div>
+        <>
+            <FieldOwnerDashboardLayout>
+                <div className="min-h-screen bg-background-secondary py-8">
+                    <div className="max-w-7xl mx-auto space-y-12">
+                        {/* AI Assistant Button */}
+                        <div className="flex justify-end">
+                            <Button
+                                onClick={() => setIsAiDialogOpen(true)}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-lg hover:shadow-xl transition-all"
+                            >
+                                <Wand2 className="w-4 h-4" />
+                                AI Hỗ trợ tạo sân
+                            </Button>
+                        </div>
 
-                    {/* Basic Price Section */}
-                    <div id="section-price">
-                        <PriceCard
-                            formData={formData}
-                            onInputChange={handleInputChange}
-                            onApplyDefaultHours={(start: string, end: string) => {
-                                // Always apply to all available days
-                                const targetDays = availableDays.map(d => d.value);
-                                setFormData(prev => {
-                                    const updated = { ...prev };
-                                    targetDays.forEach(day => {
-                                        const idx = updated.operatingHours.findIndex(oh => oh.day === day);
-                                        if (idx >= 0) {
-                                            updated.operatingHours[idx] = {
-                                                ...updated.operatingHours[idx],
-                                                start,
-                                                end
-                                            };
-                                        } else {
-                                            updated.operatingHours.push({ day, start, end, duration: prev.slotDuration || 60 });
-                                        }
-                                    });
-                                    return updated;
-                                });
-                                // Also mark availability true for those days if not set
-                                setDayAvailability(prev => {
-                                    const copy = { ...prev };
-                                    targetDays.forEach(day => { copy[day] = copy[day] ?? true; });
-                                    return copy;
-                                });
-                            }}
-                        />
-                    </div>
+                        {/* Basic Info Section */}
+                        <div id="section-basic">
+                            <BasicInfoCard
+                                formData={formData}
+                                onInputChange={handleInputChange}
+                            />
+                        </div>
 
-                    {/* Availability Section */}
-                    <div id="section-availability">
-                        <AvailabilityCard
-                            selectedDays={selectedDays}
-                            dayAvailability={dayAvailability}
-                            editingDay={editingDay}
-                            formData={formData}
-                            availableDays={availableDays}
-                            availableMultipliers={availableMultipliers}
-                            onToggleDay={toggleDay}
-                            onToggleDayAvailability={toggleDayAvailability}
-                            onEditDay={handleEditDay}
-                            onOperatingHoursChange={handleOperatingHoursChange}
-                            onPriceRangeChange={handlePriceRangeChange}
-                            onAddPriceRange={addPriceRange}
-                            onRemovePriceRange={removePriceRange}
-                            onApplyDaySettings={(sourceDay: string, targetDays: string[]) => {
-                                setFormData(prev => {
-                                    const updated = { ...prev };
-
-                                    // Copy Operating Hours from sourceDay
-                                    const srcHours = updated.operatingHours.find(oh => oh.day === sourceDay);
-                                    if (srcHours) {
-                                        targetDays.forEach(td => {
-                                            const idx = updated.operatingHours.findIndex(oh => oh.day === td);
+                        {/* Basic Price Section */}
+                        <div id="section-price">
+                            <PriceCard
+                                formData={formData}
+                                onInputChange={handleInputChange}
+                                onApplyDefaultHours={(start: string, end: string) => {
+                                    // Always apply to all available days
+                                    const targetDays = availableDays.map(d => d.value);
+                                    setFormData(prev => {
+                                        const updated = { ...prev };
+                                        targetDays.forEach(day => {
+                                            const idx = updated.operatingHours.findIndex(oh => oh.day === day);
                                             if (idx >= 0) {
                                                 updated.operatingHours[idx] = {
                                                     ...updated.operatingHours[idx],
-                                                    start: srcHours.start,
-                                                    end: srcHours.end,
-                                                    duration: srcHours.duration
+                                                    start,
+                                                    end
                                                 };
                                             } else {
-                                                updated.operatingHours.push({
-                                                    day: td,
-                                                    start: srcHours.start,
-                                                    end: srcHours.end,
-                                                    duration: srcHours.duration
-                                                });
+                                                updated.operatingHours.push({ day, start, end, duration: prev.slotDuration || 60 });
                                             }
                                         });
-                                    }
+                                        return updated;
+                                    });
+                                    // Also mark availability true for those days if not set
+                                    setDayAvailability(prev => {
+                                        const copy = { ...prev };
+                                        targetDays.forEach(day => { copy[day] = copy[day] ?? true; });
+                                        return copy;
+                                    });
+                                }}
+                            />
+                        </div>
 
-                                    // Copy Price Ranges from sourceDay
-                                    const srcRanges = updated.priceRanges.filter(pr => pr.day === sourceDay);
-                                    targetDays.forEach(td => {
-                                        // Remove existing ranges of target day
-                                        updated.priceRanges = updated.priceRanges.filter(pr => pr.day !== td);
-                                        // Add cloned ranges for target day
-                                        updated.priceRanges = [
-                                            ...updated.priceRanges,
-                                            ...srcRanges.map(r => ({ ...r, day: td }))
-                                        ];
+                        {/* Availability Section */}
+                        <div id="section-availability">
+                            <AvailabilityCard
+                                selectedDays={selectedDays}
+                                dayAvailability={dayAvailability}
+                                editingDay={editingDay}
+                                formData={formData}
+                                availableDays={availableDays}
+                                availableMultipliers={availableMultipliers}
+                                onToggleDay={toggleDay}
+                                onToggleDayAvailability={toggleDayAvailability}
+                                onEditDay={handleEditDay}
+                                onOperatingHoursChange={handleOperatingHoursChange}
+                                onPriceRangeChange={handlePriceRangeChange}
+                                onAddPriceRange={addPriceRange}
+                                onRemovePriceRange={removePriceRange}
+                                onApplyDaySettings={(sourceDay: string, targetDays: string[]) => {
+                                    setFormData(prev => {
+                                        const updated = { ...prev };
+
+                                        // Copy Operating Hours from sourceDay
+                                        const srcHours = updated.operatingHours.find(oh => oh.day === sourceDay);
+                                        if (srcHours) {
+                                            targetDays.forEach(td => {
+                                                const idx = updated.operatingHours.findIndex(oh => oh.day === td);
+                                                if (idx >= 0) {
+                                                    updated.operatingHours[idx] = {
+                                                        ...updated.operatingHours[idx],
+                                                        start: srcHours.start,
+                                                        end: srcHours.end,
+                                                        duration: srcHours.duration
+                                                    };
+                                                } else {
+                                                    updated.operatingHours.push({
+                                                        day: td,
+                                                        start: srcHours.start,
+                                                        end: srcHours.end,
+                                                        duration: srcHours.duration
+                                                    });
+                                                }
+                                            });
+                                        }
+
+                                        // Copy Price Ranges from sourceDay
+                                        const srcRanges = updated.priceRanges.filter(pr => pr.day === sourceDay);
+                                        targetDays.forEach(td => {
+                                            // Remove existing ranges of target day
+                                            updated.priceRanges = updated.priceRanges.filter(pr => pr.day !== td);
+                                            // Add cloned ranges for target day
+                                            updated.priceRanges = [
+                                                ...updated.priceRanges,
+                                                ...srcRanges.map(r => ({ ...r, day: td }))
+                                            ];
+                                        });
+
+                                        return updated;
                                     });
 
-                                    return updated;
-                                });
+                                    // Ensure targets are marked as selected and available
+                                    setSelectedDays(prev => Array.from(new Set([...prev, ...targetDays])));
+                                    setDayAvailability(prev => {
+                                        const copy = { ...prev };
+                                        targetDays.forEach(td => { copy[td] = true; });
+                                        return copy;
+                                    });
+                                }}
+                                onResetAvailability={handleResetAvailability}
+                                onSaveAvailability={handleSaveAvailability}
+                            />
+                        </div>
 
-                                // Ensure targets are marked as selected and available
-                                setSelectedDays(prev => Array.from(new Set([...prev, ...targetDays])));
-                                setDayAvailability(prev => {
-                                    const copy = { ...prev };
-                                    targetDays.forEach(td => { copy[td] = true; });
-                                    return copy;
-                                });
-                            }}
-                            onResetAvailability={handleResetAvailability}
-                            onSaveAvailability={handleSaveAvailability}
-                        />
+                        {/* Venue Overview Section */}
+                        <div id="section-overview">
+                            <OverviewCard
+                                formData={formData}
+                                onInputChange={handleInputChange}
+                            />
+                        </div>
+
+                        {/* Includes Section */}
+                        <div id="section-includes">
+                            <IncludesCard
+                                selectedIncludes={selectedIncludes}
+                                onIncludesChange={handleIncludesChange}
+                                sportType={formData.sportType}
+                            />
+                        </div>
+
+                        {/* Venue Rules Section */}
+                        <div id="section-rules">
+                            <RulesCard rules={rules} onRulesChange={setRules} />
+                        </div>
+
+                        {/* Amenities Section */}
+                        <div id="section-amenities">
+                            <AmenitiesCard
+                                selectedAmenities={selectedAmenities}
+                                onAmenitiesChange={handleAmenitiesChange}
+                                sportType={formData.sportType}
+                            />
+                        </div>
+
+                        {/* Gallery Section */}
+                        <div id="section-gallery">
+                            <GalleryCard
+                                avatarPreview={avatarPreview}
+                                onAvatarUpload={handleAvatarUpload}
+                                onRemoveAvatar={removeAvatar}
+                                galleryPreviews={galleryPreviews}
+                                onGalleryUpload={handleGalleryUpload}
+                                onRemoveGalleryImage={removeGalleryImage}
+                            />
+                        </div>
+
+                        {/* Location Section */}
+                        <div id="section-locations">
+                            <LocationCard
+                                formData={formData}
+                                onInputChange={handleInputChange}
+                                onLocationChange={handleLocationChange}
+                            />
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex justify-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={fillSampleData}
+                                disabled={createLoading || createWithImagesLoading}
+                            >
+                                Điền dữ liệu mẫu
+                            </Button>
+                            <Button
+                                size="lg"
+                                className="px-8"
+                                onClick={handleSubmit}
+                                disabled={createLoading || createWithImagesLoading}
+                            >
+                                {createLoading || createWithImagesLoading ? 'Đang tạo sân...' : 'Lưu sân'}
+                            </Button>
+                        </div>
+
                     </div>
-
-                    {/* Venue Overview Section */}
-                    <div id="section-overview">
-                        <OverviewCard
-                            formData={formData}
-                            onInputChange={handleInputChange}
-                        />
-                    </div>
-
-                    {/* Includes Section */}
-                    <div id="section-includes">
-                        <IncludesCard
-                            selectedIncludes={selectedIncludes}
-                            onIncludesChange={handleIncludesChange}
-                            sportType={formData.sportType}
-                        />
-                    </div>
-
-                    {/* Venue Rules Section */}
-                    <div id="section-rules">
-                        <RulesCard rules={rules} onRulesChange={setRules} />
-                    </div>
-
-                    {/* Amenities Section */}
-                    <div id="section-amenities">
-                        <AmenitiesCard
-                            selectedAmenities={selectedAmenities}
-                            onAmenitiesChange={handleAmenitiesChange}
-                            sportType={formData.sportType}
-                        />
-                    </div>
-
-                    {/* Gallery Section */}
-                    <div id="section-gallery">
-                        <GalleryCard
-                            avatarPreview={avatarPreview}
-                            onAvatarUpload={handleAvatarUpload}
-                            onRemoveAvatar={removeAvatar}
-                            galleryPreviews={galleryPreviews}
-                            onGalleryUpload={handleGalleryUpload}
-                            onRemoveGalleryImage={removeGalleryImage}
-                        />
-                    </div>
-
-                    {/* Location Section */}
-                    <div id="section-locations">
-                        <LocationCard
-                            formData={formData}
-                            onInputChange={handleInputChange}
-                            onLocationChange={handleLocationChange}
-                        />
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex justify-center gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={fillSampleData}
-                            disabled={createLoading || createWithImagesLoading}
-                        >
-                            Điền dữ liệu mẫu
-                        </Button>
-                        <Button
-                            size="lg"
-                            className="px-8"
-                            onClick={handleSubmit}
-                            disabled={createLoading || createWithImagesLoading}
-                        >
-                            {createLoading || createWithImagesLoading ? 'Đang tạo sân...' : 'Lưu sân'}
-                        </Button>
-                    </div>
-
                 </div>
-            </div>
-        </FieldOwnerDashboardLayout>
+            </FieldOwnerDashboardLayout>
+
+            <AiFieldGenerationModal
+                isOpen={isAiDialogOpen}
+                onClose={() => setIsAiDialogOpen(false)}
+                onGenerate={handleAiGenerate}
+                isLoading={generateAiLoading}
+            />
+        </>
     );
 }

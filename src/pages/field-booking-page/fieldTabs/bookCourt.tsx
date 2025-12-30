@@ -3,9 +3,9 @@ import { Calendar as CalendarIcon, Clock, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { DatePicker } from '@/components/ui/date-picker';
+import { DatePicker } from "@/components/ui/date-picker";
 import type { Field, FieldAvailabilityData } from '@/types/field-type';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from '@/store/hook';
 import { checkFieldAvailability } from '@/features/field/fieldThunk';
 import { Loading } from '@/components/ui/loading';
@@ -774,8 +774,9 @@ export const BookCourtTab: React.FC<BookCourtTabProps> = ({
                                     </select>
                                 )}
                             </div>
-                            {/* Date Picker (popup) */}
-                            <div className="space-y-2.5">
+
+                            {/* Single Date Picker */}
+                            <div className="space-y-2.5 animate-in fade-in duration-300">
                                 <DatePicker
                                     label="Ngày"
                                     value={formData.date ? new Date(formData.date + 'T00:00:00') : undefined}
@@ -812,7 +813,7 @@ export const BookCourtTab: React.FC<BookCourtTabProps> = ({
                                         threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
                                         return date > threeMonthsAhead || isDateDisabled(d);
                                     }}
-                                    buttonClassName="h-14 bg-white border-0 text-left"
+                                    buttonClassName="h-14 bg-white border-gray-200 text-left"
                                     popoverAlign="start"
                                     captionLayout="dropdown-months"
                                     fromDate={(() => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; })()}
@@ -1024,21 +1025,6 @@ export const BookCourtTab: React.FC<BookCourtTabProps> = ({
                                                         Nhấn vào ô sau giờ bắt đầu để chọn giờ kết thúc
                                                     </p>
                                                 )}
-
-                                                {/* Availability status info */}
-                                                {/* {availabilityData && (
-                                                        <div className="mt-2 pt-2 border-t border-gray-200">
-                                                            <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                                                <span>Đã đặt</span>
-                                                                <div className="w-2 h-2 bg-emerald-500 rounded-full ml-3"></div>
-                                                                <span>Có thể đặt</span>
-                                                            </div>
-                                                            <p className="text-xs text-gray-500 mt-1">
-                                                                {availabilityData.slots.filter(slot => slot.available).length} / {availabilityData.slots.length} khung giờ có thể đặt
-                                                            </p>
-                                                        </div>
-                                                    )} */}
                                             </div>
                                         </>
                                     )}
@@ -1148,10 +1134,7 @@ export const BookCourtTab: React.FC<BookCourtTabProps> = ({
                     <Button
                         onClick={handleSubmit}
                         disabled={!isFormValid()}
-                        className={`px-5 py-3 text-white ${isFormValid()
-                            ? 'bg-gray-800 hover:bg-gray-900'
-                            : 'bg-gray-400 cursor-not-allowed'
-                            }`}
+                        className="px-6 py-4 text-white font-bold transition-all bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-emerald-200 shadow-lg hover:shadow-xl w-[200px]"
                     >
                         Tiếp tục
                         <ArrowRight className="w-4 h-4 ml-2" />

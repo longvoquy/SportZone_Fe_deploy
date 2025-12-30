@@ -142,7 +142,19 @@ export function FieldOwnerSidebar() {
 
         // Ensure all local state is wiped before moving away
         clearUserAuth();
-        sessionStorage.clear(); // Explicitly clear for non-cookie auth fallback
+
+        // Clear ALL auth-related storage (for both cookie and Bearer modes)
+        try {
+            sessionStorage.clear(); // Clear everything in sessionStorage
+            localStorage.removeItem("user"); // Keep other localStorage items intact
+
+            // Explicitly clear auth tokens (redundant but safe)
+            sessionStorage.removeItem("auth_access_token");
+            sessionStorage.removeItem("auth_refresh_token");
+            sessionStorage.removeItem("auth_method");
+        } catch (error) {
+            console.error("Failed to clear storage:", error);
+        }
 
         try {
             await dispatch(logout()).unwrap();

@@ -15,6 +15,34 @@ export interface CreateFieldBookingPayload {
     note?: string; // User note to owner (max 200 chars)
 }
 
+export interface CreateConsecutiveDaysBookingPayload {
+    fieldId: string;
+    courtId: string;
+    startDate: string; // YYYY-MM-DD
+    endDate: string; // YYYY-MM-DD
+    startTime: string; // HH:mm
+    endTime: string; // HH:mm
+    selectedAmenities?: string[];
+    paymentMethod?: number;
+    paymentNote?: string;
+    note?: string;
+}
+
+// Turn 2: Weekly Recurring Booking Payload
+export interface CreateWeeklyRecurringPayload {
+    fieldId: string;
+    courtId: string;
+    weekdays: string[]; // ['monday', 'wednesday', 'friday']
+    numberOfWeeks: number; // 1-12
+    startDate: string; // YYYY-MM-DD (first week start)
+    startTime: string; // HH:mm
+    endTime: string; // HH:mm
+    selectedAmenities?: string[];
+    paymentMethod?: number;
+    paymentNote?: string;
+    note?: string;
+}
+
 export interface CreateSessionBookingPayload {
     fieldId: string;
     coachId: string;

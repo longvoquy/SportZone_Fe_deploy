@@ -1030,6 +1030,12 @@ export default function CoachSelfDetailPage() {
                                     certification = currentCoach?.coachingDetails?.certification ?? resolvedCoachRaw?.coachingDetails?.certification ?? '';
                                   }
 
+                                  // Validate hourlyRate
+                                  const hourlyRateValue = editablePrice === "-" ? undefined : Number(editablePrice);
+                                  if (hourlyRateValue !== undefined && (isNaN(hourlyRateValue) || hourlyRateValue < 0)) {
+                                    return CustomFailedToast('Giá tiền phải là số dương hợp lệ');
+                                  }
+
                                   const payload: any = {
                                     bio: editableSummary,
                                     sports: editableSports,
@@ -1037,17 +1043,35 @@ export default function CoachSelfDetailPage() {
                                     experience,
                                     rank: editableRank,
                                     galleryImages: finalGalleryImages,
+                                    hourlyRate: hourlyRateValue,
+                                    isActive: isCoachActive,
                                   };
 
                                   // 3. Save Both
                                   try {
+                                    logger.debug('Attempting to save coach profile', {
+                                      coachId,
+                                      payload,
+                                      hourlyRateValue,
+                                      isCoachActive
+                                    });
+
                                     const action: any = await dispatch(updateCoach({ id: coachId, data: payload }));
+
+                                    logger.debug('Update coach response', {
+                                      status: action?.meta?.requestStatus,
+                                      payload: action?.payload
+                                    });
+
                                     if (action?.meta?.requestStatus === 'fulfilled') {
                                       CustomSuccessToast('Lưu thông tin thành công');
+                                      setIsDirty(false);
                                       // refresh data
                                       dispatch(getCoachById(coachId));
                                     } else {
-                                      CustomFailedToast(String(action?.payload?.message || 'Lưu thất bại'));
+                                      const errorMsg = action?.payload?.message || 'Lưu thất bại';
+                                      logger.error('Update coach failed', { error: errorMsg, action });
+                                      CustomFailedToast(String(errorMsg));
                                     }
                                   } catch (err) {
                                     logger.error('Update coach failed', err);

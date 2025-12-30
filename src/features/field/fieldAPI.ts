@@ -9,8 +9,9 @@ export const FIELD_BY_ID_API = (id: string) => `${BASE_URL}/fields/${id}`;
 const FIELD_OWNER_FIELDS_BASE = `${BASE_URL}/field-owner/fields`;
 export const CREATE_FIELD_API = FIELD_OWNER_FIELDS_BASE;
 export const CREATE_FIELD_WITH_IMAGES_API = `${FIELD_OWNER_FIELDS_BASE}/with-images`;
+export const GENERATE_FIELD_AI_API = `${BASE_URL}/fields/ai/generate`;
 export const UPDATE_FIELD_API = (id: string) => `${FIELD_OWNER_FIELDS_BASE}/${id}`;
-export const UPDATE_FIELD_WITH_IMAGES_API = (id: string) => `${FIELD_OWNER_FIELDS_BASE}/${id}/with-images`;
+export const UPDATE_FIELD_WITH_IMAGES_API = (id: string) => `${FIELD_OWNER_FIELDS_BASE}/${id}/with-images`; // PATCH
 export const DELETE_FIELD_API = (id: string) => `${FIELD_OWNER_FIELDS_BASE}/${id}`;
 
 // Availability endpoints (Pure Lazy Creation)
