@@ -4,13 +4,13 @@ import logger from "@/utils/logger";
 import {
     GET_PROFILE_API,
     UPDATE_PROFILE_API,
-    SET_FAVOURITE_FIELDS_API,
-    REMOVE_FAVOURITE_FIELDS_API,
+    SET_BOOKMARK_FIELDS_API,
+    REMOVE_BOOKMARK_FIELDS_API,
     FORGOT_PASSWORD_API,
     RESET_PASSWORD_API,
     CHANGE_PASSWORD_API,
 } from "./userAPI";
-import { GET_FAVOURITE_FIELDS_API, GET_FAVOURITE_COACHES_API, SET_FAVOURITE_COACHES_API, REMOVE_FAVOURITE_COACHES_API } from './userAPI';
+import { GET_BOOKMARK_FIELDS_API, GET_BOOKMARK_COACHES_API, SET_BOOKMARK_COACHES_API, REMOVE_BOOKMARK_COACHES_API } from './userAPI';
 import type {
     User,
     UpdateProfilePayload,
@@ -80,139 +80,139 @@ export const updateUserProfile = createAsyncThunk<
     }
 });
 
-// Set favourite coaches
+// Set bookmark coaches
 
-// Set favourite coaches
-export interface SetFavouriteCoachesPayload {
-    favouriteCoaches: string[];
+// Set bookmark coaches
+export interface SetBookmarkCoachesPayload {
+    bookmarkCoaches: string[];
 }
 
-export const setFavouriteCoaches = createAsyncThunk<
+export const setBookmarkCoaches = createAsyncThunk<
     User,
-    SetFavouriteCoachesPayload,
+    SetBookmarkCoachesPayload,
     { rejectValue: ErrorResponse }
->("user/setFavouriteCoaches", async (payload, thunkAPI) => {
+>("user/setBookmarkCoaches", async (payload, thunkAPI) => {
     try {
-        const response = await axiosPrivate.post(SET_FAVOURITE_COACHES_API, payload);
+        const response = await axiosPrivate.post(SET_BOOKMARK_COACHES_API, payload);
         // API returns updated user in response.data.data
         return response.data.data;
     } catch (error: any) {
         const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to set favourite coaches",
+            message: error.response?.data?.message || error.message || "Failed to set bookmark coaches",
             status: error.response?.status || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);
     }
 });
 
-// Remove favourite coaches
-export interface RemoveFavouriteCoachesPayload {
-    favouriteCoaches: string[];
+// Remove bookmark coaches
+export interface RemoveBookmarkCoachesPayload {
+    bookmarkCoaches: string[];
 }
 
-export const removeFavouriteCoaches = createAsyncThunk<
+export const removeBookmarkCoaches = createAsyncThunk<
     User,
-    RemoveFavouriteCoachesPayload,
+    RemoveBookmarkCoachesPayload,
     { rejectValue: ErrorResponse }
->("user/removeFavouriteCoaches", async (payload, thunkAPI) => {
+>("user/removeBookmarkCoaches", async (payload, thunkAPI) => {
     try {
         // axios delete with body needs `data` option
-        const response = await axiosPrivate.delete(REMOVE_FAVOURITE_COACHES_API, { data: payload });
+        const response = await axiosPrivate.delete(REMOVE_BOOKMARK_COACHES_API, { data: payload });
         return response.data.data;
     } catch (error: any) {
         const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to remove favourite coaches",
+            message: error.response?.data?.message || error.message || "Failed to remove bookmark coaches",
             status: error.response?.status || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);
     }
 });
 
-// Set favourite fields
-export interface SetFavouriteFieldsPayload {
-    favouriteFields: string[];
+// Set bookmark fields
+export interface SetBookmarkFieldsPayload {
+    bookmarkFields: string[];
 }
 
-export const setFavouriteFields = createAsyncThunk<
+export const setBookmarkFields = createAsyncThunk<
     User,
-    SetFavouriteFieldsPayload,
+    SetBookmarkFieldsPayload,
     { rejectValue: ErrorResponse }
->("user/setFavouriteFields", async (payload, thunkAPI) => {
+>("user/setBookmarkFields", async (payload, thunkAPI) => {
     try {
-        const response = await axiosPrivate.post(SET_FAVOURITE_FIELDS_API, payload);
+        const response = await axiosPrivate.post(SET_BOOKMARK_FIELDS_API, payload);
 
         // Handle different response structures
         return response.data.data || response.data;
     } catch (error: any) {
-        logger.error("setFavouriteFields API error:", error.response?.data || error.message);
+        logger.error("setBookmarkFields API error:", error.response?.data || error.message);
         const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to set favourite fields",
+            message: error.response?.data?.message || error.message || "Failed to set bookmark fields",
             status: error.response?.status || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);
     }
 });
 
-// Remove favourite fields
-export interface RemoveFavouriteFieldsPayload {
-    favouriteFields: string[];
+// Remove bookmark fields
+export interface RemoveBookmarkFieldsPayload {
+    bookmarkFields: string[];
 }
 
-export const removeFavouriteFields = createAsyncThunk<
+export const removeBookmarkFields = createAsyncThunk<
     User,
-    RemoveFavouriteFieldsPayload,
+    RemoveBookmarkFieldsPayload,
     { rejectValue: ErrorResponse }
->("user/removeFavouriteFields", async (payload, thunkAPI) => {
+>("user/removeBookmarkFields", async (payload, thunkAPI) => {
     try {
-        const response = await axiosPrivate.delete(REMOVE_FAVOURITE_FIELDS_API, { data: payload });
+        const response = await axiosPrivate.delete(REMOVE_BOOKMARK_FIELDS_API, { data: payload });
 
         // Handle different response structures
         return response.data.data || response.data;
     } catch (error: any) {
-        logger.error("removeFavouriteFields API error:", error.response?.data || error.message);
+        logger.error("removeBookmarkFields API error:", error.response?.data || error.message);
         const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to remove favourite fields",
+            message: error.response?.data?.message || error.message || "Failed to remove bookmark fields",
             status: error.response?.status || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);
     }
 });
 
-// Get favourite fields
-import type { FavouriteField } from '../../types/favourite-field';
-export const getFavouriteFields = createAsyncThunk<
-    FavouriteField[],
+// Get bookmark fields
+import type { BookmarkField } from '../../types/bookmark-field';
+export const getBookmarkFields = createAsyncThunk<
+    BookmarkField[],
     void,
     { rejectValue: ErrorResponse }
->("user/getFavouriteFields", async (_, thunkAPI) => {
+>("user/getBookmarkFields", async (_, thunkAPI) => {
     try {
-        const response = await axiosPrivate.get(GET_FAVOURITE_FIELDS_API);
+        const response = await axiosPrivate.get(GET_BOOKMARK_FIELDS_API);
         // support both { data: [...] } and { data: { data: [...] } }
         const data = response.data?.data ?? response.data;
-        return data as FavouriteField[];
+        return data as BookmarkField[];
     } catch (error: any) {
         const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to fetch favourite fields",
+            message: error.response?.data?.message || error.message || "Failed to fetch bookmark fields",
             status: error.response?.status || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);
     }
 });
 
-// Get favourite coaches
-import type { FavouriteCoach } from '../../types/favourite-coach';
-export const getFavouriteCoaches = createAsyncThunk<
-    FavouriteCoach[],
+// Get bookmark coaches
+import type { BookmarkCoach } from '../../types/bookmark-coach';
+export const getBookmarkCoaches = createAsyncThunk<
+    BookmarkCoach[],
     void,
     { rejectValue: ErrorResponse }
->("user/getFavouriteCoaches", async (_, thunkAPI) => {
+>("user/getBookmarkCoaches", async (_, thunkAPI) => {
     try {
-        const response = await axiosPrivate.get(GET_FAVOURITE_COACHES_API);
+        const response = await axiosPrivate.get(GET_BOOKMARK_COACHES_API);
         const data = response.data?.data ?? response.data;
-        return data as FavouriteCoach[];
+        return data as BookmarkCoach[];
     } catch (error: any) {
         const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to fetch favourite coaches",
+            message: error.response?.data?.message || error.message || "Failed to fetch bookmark coaches",
             status: error.response?.status || "500",
         };
         return thunkAPI.rejectWithValue(errorResponse);

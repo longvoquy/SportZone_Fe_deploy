@@ -15,10 +15,10 @@ import {
 import {
     getUserProfile,
     updateUserProfile,
-    setFavouriteCoaches,
-    removeFavouriteCoaches,
-    setFavouriteFields,
-    removeFavouriteFields,
+    setBookmarkCoaches,
+    removeBookmarkCoaches,
+    setBookmarkFields,
+    removeBookmarkFields,
 } from "../user/userThunk";
 import type { AuthResponse, ErrorResponse } from "../../types/authentication-type";
 import { clearUserAuth, setCookie } from "../../lib/cookies";
@@ -386,23 +386,23 @@ const authSlice = createSlice({
                 state.updateError = action.payload || { message: "Failed to update profile", status: "500" };
             })
 
-            // Set favourite coaches
-            .addCase(setFavouriteCoaches.fulfilled, (state, action) => {
+            // Set bookmark coaches
+            .addCase(setBookmarkCoaches.fulfilled, (state, action) => {
                 state.user = action.payload;
                 setCookie("user", JSON.stringify(action.payload));
             })
-            // Remove favourite coaches
-            .addCase(removeFavouriteCoaches.fulfilled, (state, action) => {
+            // Remove bookmark coaches
+            .addCase(removeBookmarkCoaches.fulfilled, (state, action) => {
                 state.user = action.payload;
                 setCookie("user", JSON.stringify(action.payload));
             })
-            // Set favourite fields
-            .addCase(setFavouriteFields.fulfilled, (state, action) => {
+            // Set bookmark fields
+            .addCase(setBookmarkFields.fulfilled, (state, action) => {
                 state.user = action.payload;
                 setCookie("user", JSON.stringify(action.payload));
             })
-            // Remove favourite fields
-            .addCase(removeFavouriteFields.fulfilled, (state, action) => {
+            // Remove bookmark fields
+            .addCase(removeBookmarkFields.fulfilled, (state, action) => {
                 state.user = action.payload;
                 setCookie("user", JSON.stringify(action.payload));
             })

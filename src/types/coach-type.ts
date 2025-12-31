@@ -132,7 +132,7 @@ export interface CoachDetailResponse {
 
 // Coach Profile (resolve by userId) - dedicated type for /profiles/coach-id/:userId
 export interface CoachProfileUser {
-    favouriteField: string[];
+    bookmarkField: string[];
     isActive: boolean;
     _id: string;
     fullName: string;

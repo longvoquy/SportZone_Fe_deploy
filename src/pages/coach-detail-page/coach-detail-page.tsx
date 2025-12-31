@@ -7,7 +7,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import L from "leaflet";
 import { getCoachById, clearCurrentCoach, getPublicCoaches } from "@/features/coach";
-import { setFavouriteCoaches, removeFavouriteCoaches, getUserProfile } from "@/features/user";
+import { setBookmarkCoaches, removeBookmarkCoaches, getUserProfile } from "@/features/user";
 import { createCoachReviewThunk, getCoachStatsThunk } from "@/features/reviews/reviewThunk";
 import { getReviewsForCoachAPI } from "@/features/reviews/reviewAPI";
 import {
@@ -46,40 +46,40 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
 
   const [favLoading, setFavLoading] = useState(false);
 
-  const favouriteCoachIds: string[] = Array.isArray(authUser?.favouriteCoaches)
-    ? authUser!.favouriteCoaches.map((c: any) => (typeof c === 'string' ? c : (c._id || c.id || String(c))))
+  const bookmarkCoachIds: string[] = Array.isArray(authUser?.bookmarkCoaches)
+    ? authUser!.bookmarkCoaches.map((c: any) => (typeof c === 'string' ? c : (c._id || c.id || String(c))))
     : [];
 
-  const isFavourite = Boolean(effectiveCoachId && favouriteCoachIds.includes(effectiveCoachId as string));
+  const isBookmark = Boolean(effectiveCoachId && bookmarkCoachIds.includes(effectiveCoachId as string));
 
-  const toggleFavourite = async () => {
+  const toggleBookmark = async () => {
     if (!authUser) {
-      return CustomFailedToast("Vui lòng đăng nhập để thêm huấn luyện viên vào yêu thích");
+      return CustomFailedToast("Vui lòng đăng nhập để thêm huấn luyện viên vào bookmark");
     }
     if (!effectiveCoachId) return;
 
     try {
       setFavLoading(true);
-      if (isFavourite) {
-        const payload = { favouriteCoaches: [effectiveCoachId as string] };
-        const action: any = await dispatch(removeFavouriteCoaches(payload));
+      if (isBookmark) {
+        const payload = { bookmarkCoaches: [effectiveCoachId as string] };
+        const action: any = await dispatch(removeBookmarkCoaches(payload));
         if (action?.meta?.requestStatus === "fulfilled") {
-          CustomSuccessToast("Đã bỏ yêu thích");
+          CustomSuccessToast("Đã bỏ bookmark");
         } else {
           const pl = action?.payload;
-          const message = typeof pl === 'string' ? pl : pl?.message ?? (pl ? JSON.stringify(pl) : "Bỏ yêu thích thất bại");
-          logger.error('Remove favourite failed', { payload: pl, error: action?.error });
+          const message = typeof pl === 'string' ? pl : pl?.message ?? (pl ? JSON.stringify(pl) : "Bỏ bookmark thất bại");
+          logger.error('Remove bookmark failed', { payload: pl, error: action?.error });
           CustomFailedToast(message);
         }
       } else {
-        const payload = { favouriteCoaches: [effectiveCoachId as string] };
-        const action: any = await dispatch(setFavouriteCoaches(payload));
+        const payload = { bookmarkCoaches: [effectiveCoachId as string] };
+        const action: any = await dispatch(setBookmarkCoaches(payload));
         if (action?.meta?.requestStatus === "fulfilled") {
-          CustomSuccessToast("Đã thêm vào yêu thích");
+          CustomSuccessToast("Đã thêm vào bookmark");
         } else {
           const pl = action?.payload;
-          const message = typeof pl === 'string' ? pl : pl?.message ?? (pl ? JSON.stringify(pl) : "Thêm yêu thích thất bại");
-          logger.error('Set favourite failed', { payload: pl, error: action?.error });
+          const message = typeof pl === 'string' ? pl : pl?.message ?? (pl ? JSON.stringify(pl) : "Thêm bookmark thất bại");
+          logger.error('Set bookmark failed', { payload: pl, error: action?.error });
           CustomFailedToast(message);
         }
       }
@@ -88,7 +88,7 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
     } finally {
       setFavLoading(false);
       try {
-        // refresh profile to sync favouriteCoaches state with server
+        // refresh profile to sync bookmarkCoaches state with server
         dispatch(getUserProfile());
       } catch (err: any) {
         logger.error('Failed to refresh profile', err);
@@ -151,12 +151,12 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
     }
   }, [dispatch, effectiveCoachId]);
 
-  // Ensure auth profile (favouriteCoaches) is fresh on page load so the favorite
-  // button correctly reflects server state. Only refresh when favourites are
+  // Ensure auth profile (bookmarkCoaches) is fresh on page load so the bookmark
+  // button correctly reflects server state. Only refresh when bookmarks are
   // missing or don't include the current coach id.
   useEffect(() => {
     if (!effectiveCoachId) return;
-    const needRefresh = !authUser || !Array.isArray(authUser.favouriteCoaches) || !authUser.favouriteCoaches.includes(effectiveCoachId as string);
+    const needRefresh = !authUser || !Array.isArray(authUser.bookmarkCoaches) || !authUser.bookmarkCoaches.includes(effectiveCoachId as string);
     if (needRefresh) {
       dispatch(getUserProfile());
     }
@@ -497,9 +497,9 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
               <CoachInfoCard
                 coachData={coachData}
                 coachReviews={coachReviews}
-                isFavourite={isFavourite}
+                isBookmark={isBookmark}
                 favLoading={favLoading}
-                onToggleFavourite={toggleFavourite}
+                onToggleBookmark={toggleBookmark}
                 onOpenChat={() => setShowCoachChat(true)}
               />
 

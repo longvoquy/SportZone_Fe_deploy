@@ -2,11 +2,11 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
     getUserProfile,
     updateUserProfile,
-    removeFavouriteCoaches,
-    setFavouriteFields,
-    removeFavouriteFields,
-    getFavouriteFields,
-    getFavouriteCoaches,
+    removeBookmarkCoaches,
+    setBookmarkFields,
+    removeBookmarkFields,
+    getBookmarkFields,
+    getBookmarkCoaches,
     forgotPassword,
 } from "./userThunk";
 import type { User, ErrorResponse } from "../../types/user-type";
@@ -16,7 +16,7 @@ interface UserState {
     user: User | null;
     loading: boolean;
     error: ErrorResponse | null;
-    favouriteFields?: import('../../types/favourite-field').FavouriteField[] | null;
+    bookmarkFields?: import('../../types/bookmark-field').BookmarkField[] | null;
     updateLoading: boolean;
     updateError: ErrorResponse | null;
     forgotPasswordLoading: boolean;
@@ -34,7 +34,7 @@ const initialState: UserState = {
     user: null,
     loading: false,
     error: null,
-    favouriteFields: null,
+    bookmarkFields: null,
     updateLoading: false,
     updateError: null,
     forgotPasswordLoading: false,
@@ -90,32 +90,32 @@ const userSlice = createSlice({
                 state.error = action.payload || { message: "Failed to update profile", status: "500" };
             });
 
-        // Get favourite fields
+        // Get bookmark fields
         builder
-            .addCase(getFavouriteFields.pending, () => {
+            .addCase(getBookmarkFields.pending, () => {
                 // no-op or set a loading flag if desired
             })
-            .addCase(getFavouriteFields.fulfilled, (state, action) => {
-                state.favouriteFields = action.payload;
+            .addCase(getBookmarkFields.fulfilled, (state, action) => {
+                state.bookmarkFields = action.payload;
             })
-            .addCase(getFavouriteFields.rejected, (_state, action) => {
-                logger.error('getFavouriteFields failed', action.payload);
+            .addCase(getBookmarkFields.rejected, (_state, action) => {
+                logger.error('getBookmarkFields failed', action.payload);
             });
 
-        // Get favourite coaches
+        // Get bookmark coaches
         builder
-            .addCase(getFavouriteCoaches.pending, () => {
+            .addCase(getBookmarkCoaches.pending, () => {
                 // no-op or set loading
             })
-            .addCase(getFavouriteCoaches.fulfilled, (state, action) => {
+            .addCase(getBookmarkCoaches.fulfilled, (state, action) => {
                 // store under a new key on state.user to avoid changing existing shape
-                // We don't have favouriteCoaches on UserState root, maybe on User? 
+                // We don't have bookmarkCoaches on UserState root, maybe on User? 
                 // But previously it cast state as any. 
                 // Let's keep the logic but clean up syntax.
-                (state as any).favouriteCoaches = action.payload;
+                (state as any).bookmarkCoaches = action.payload;
             })
-            .addCase(getFavouriteCoaches.rejected, (_state, action) => {
-                logger.error('getFavouriteCoaches failed', action.payload);
+            .addCase(getBookmarkCoaches.rejected, (_state, action) => {
+                logger.error('getBookmarkCoaches failed', action.payload);
             });
 
         // Forgot password
@@ -136,18 +136,18 @@ const userSlice = createSlice({
                 state.forgotPasswordSuccess = false;
             });
 
-        // Remove Favourite Coaches
-        builder.addCase(removeFavouriteCoaches.fulfilled, (state, action) => {
+        // Remove Bookmark Coaches
+        builder.addCase(removeBookmarkCoaches.fulfilled, (state, action) => {
             state.user = action.payload;
         });
 
-        // Set Favourite Fields
-        builder.addCase(setFavouriteFields.fulfilled, (state, action) => {
+        // Set Bookmark Fields
+        builder.addCase(setBookmarkFields.fulfilled, (state, action) => {
             state.user = action.payload;
         });
 
-        // Remove Favourite Fields
-        builder.addCase(removeFavouriteFields.fulfilled, (state, action) => {
+        // Remove Bookmark Fields
+        builder.addCase(removeBookmarkFields.fulfilled, (state, action) => {
             state.user = action.payload;
         });
     },

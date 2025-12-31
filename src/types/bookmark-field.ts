@@ -1,11 +1,11 @@
-export interface FavouriteCoach {
+export interface BookmarkField {
     id: string;
     name: string;
     avatar?: string | null;
     totalBookings: number;
 }
 
-export interface FavouriteCoachesResponse {
+export interface BookmarkFieldsResponse {
     success?: boolean;
-    data: FavouriteCoach[];
+    data: BookmarkField[];
 }

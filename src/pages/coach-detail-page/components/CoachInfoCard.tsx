@@ -11,18 +11,18 @@ import { getCoachStatsThunk } from "@/features/reviews/reviewThunk";
 interface CoachInfoCardProps {
   coachData: any;
   coachReviews: any[];
-  isFavourite: boolean;
+  isBookmark: boolean;
   favLoading: boolean;
-  onToggleFavourite: () => void;
+  onToggleBookmark: () => void;
   onOpenChat?: () => void;
 }
 
 export const CoachInfoCard: React.FC<CoachInfoCardProps> = ({
   coachData,
   coachReviews,
-  isFavourite,
+  isBookmark,
   favLoading,
-  onToggleFavourite,
+  onToggleBookmark,
   onOpenChat,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -89,15 +89,15 @@ export const CoachInfoCard: React.FC<CoachInfoCardProps> = ({
                     >
                       <Mail className="h-4 w-4" />
                     </Button>
-                    {/* Favourite button */}
+                    {/* Bookmark button */}
                     <Button
                       size="sm"
-                      onClick={onToggleFavourite}
+                      onClick={onToggleBookmark}
                       disabled={favLoading}
-                      className={`${isFavourite ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'} text-white border-0 flex items-center gap-2`}
+                      className={`${isBookmark ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'} text-white border-0 flex items-center gap-2`}
                     >
                       <Heart className="h-4 w-4" />
-                      {favLoading ? 'Đang xử lý...' : isFavourite ? 'Đã yêu thích' : 'Yêu thích'}
+                      {favLoading ? 'Đang xử lý...' : isBookmark ? 'Đã bookmark' : 'Bookmark'}
                     </Button>
                   </div>
                 </div>

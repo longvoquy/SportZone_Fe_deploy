@@ -3,7 +3,7 @@ import logger from "@/utils/logger"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useAppDispatch, useAppSelector } from "@/store/hook"
-import { setFavouriteFields, removeFavouriteFields, getUserProfile } from "@/features/user"
+import { setBookmarkFields, removeBookmarkFields, getUserProfile } from "@/features/user"
 import { CustomFailedToast, CustomSuccessToast } from "@/components/toast/notificiation-toast"
 import { getFieldById } from "@/features/field/fieldThunk"
 import { NavbarDarkComponent } from "@/components/header/navbar-dark-component"
@@ -53,16 +53,16 @@ const FieldDetailPage: React.FC = () => {
   const authUser = useAppSelector((s) => s.auth.user)
   const [favLoading, setFavLoading] = useState(false)
 
-  const favouriteFieldIds: string[] = Array.isArray(authUser?.favouriteFields)
-    ? authUser!.favouriteFields.map((f: any) => (typeof f === 'string' ? f : (f._id || f.id || String(f))))
+  const bookmarkFieldIds: string[] = Array.isArray(authUser?.bookmarkFields)
+    ? authUser!.bookmarkFields.map((f: any) => (typeof f === 'string' ? f : (f._id || f.id || String(f))))
     : [];
 
-  const isFavourite = Boolean(id && favouriteFieldIds.includes(id));
+  const isBookmark = Boolean(id && bookmarkFieldIds.includes(id));
 
-  const toggleFavourite = async () => {
+  const toggleBookmark = async () => {
 
     if (!authUser) {
-      return CustomFailedToast("Vui lòng đăng nhập để thêm sân vào yêu thích")
+      return CustomFailedToast("Vui lòng đăng nhập để thêm sân vào bookmark")
     }
 
     if (!id) {
@@ -71,30 +71,30 @@ const FieldDetailPage: React.FC = () => {
 
     try {
       setFavLoading(true)
-      if (isFavourite) {
-        const action: any = await dispatch(removeFavouriteFields({ favouriteFields: [id] }))
+      if (isBookmark) {
+        const action: any = await dispatch(removeBookmarkFields({ bookmarkFields: [id] }))
         if (action?.meta?.requestStatus === "fulfilled") {
-          CustomSuccessToast("Đã bỏ yêu thích sân")
+          CustomSuccessToast("Đã bỏ bookmark sân")
         } else {
-          logger.error("removeFavouriteFields failed", { action });
-          CustomFailedToast(String(action?.payload?.message || action?.payload || "Bỏ yêu thích thất bại"))
+          logger.error("removeBookmarkFields failed", { action });
+          CustomFailedToast(String(action?.payload?.message || action?.payload || "Bỏ bookmark thất bại"))
         }
       } else {
-        const action: any = await dispatch(setFavouriteFields({ favouriteFields: [id] }))
+        const action: any = await dispatch(setBookmarkFields({ bookmarkFields: [id] }))
         if (action?.meta?.requestStatus === "fulfilled") {
-          CustomSuccessToast("Đã thêm sân vào yêu thích")
+          CustomSuccessToast("Đã thêm sân vào bookmark")
         } else {
-          logger.error("setFavouriteFields failed", { action });
-          CustomFailedToast(String(action?.payload?.message || action?.payload || "Thêm yêu thích thất bại"))
+          logger.error("setBookmarkFields failed", { action });
+          CustomFailedToast(String(action?.payload?.message || action?.payload || "Thêm bookmark thất bại"))
         }
       }
     } catch (err: any) {
-      logger.error("toggleFavourite error", { err });
+      logger.error("toggleBookmark error", { err });
       CustomFailedToast(err?.message || "Thao tác thất bại")
     } finally {
       setFavLoading(false)
       try {
-        // refresh profile to sync favouriteFields with server
+        // refresh profile to sync bookmarkFields with server
         dispatch(getUserProfile())
       } catch { }
     }
@@ -115,10 +115,10 @@ const FieldDetailPage: React.FC = () => {
     const now = Date.now()
     const withinCooldown = now - last < MIN_INTERVAL_MS
 
-    const missingFavs = !authUser || !Array.isArray(authUser.favouriteFields)
-    const notIncluded = Array.isArray(authUser?.favouriteFields) ? !authUser!.favouriteFields.includes(id) : true
+    const missingBookmarks = !authUser || !Array.isArray(authUser.bookmarkFields)
+    const notIncluded = Array.isArray(authUser?.bookmarkFields) ? !authUser!.bookmarkFields.includes(id) : true
 
-    if ((missingFavs || notIncluded) && !withinCooldown) {
+    if ((missingBookmarks || notIncluded) && !withinCooldown) {
       dispatch(getUserProfile()).finally(() => {
         try { localStorage.setItem(PROFILE_REFRESH_KEY, String(Date.now())) } catch { }
       })
@@ -568,24 +568,24 @@ const FieldDetailPage: React.FC = () => {
                     <span>Chia sẻ</span>
                   </button>
                   <button
-                    onClick={toggleFavourite}
+                    onClick={toggleBookmark}
                     disabled={favLoading}
-                    className={`inline-flex items-center gap-2 text-sm ${isFavourite
+                    className={`inline-flex items-center gap-2 text-sm ${isBookmark
                       ? "text-red-600 hover:text-red-800"
                       : "text-gray-600 hover:text-gray-900"
                       }`}
                   >
                     <Star
-                      className={`h-4 w-4 ${isFavourite ? "text-red-500" : "text-yellow-500"
+                      className={`h-4 w-4 ${isBookmark ? "text-red-500" : "text-yellow-500"
                         }`}
                     />
                     <span>
                       {favLoading && <Loading size={14} className="inline mr-1" />}
                       {favLoading
                         ? "Đang xử lý..."
-                        : isFavourite
-                          ? "Đã yêu thích"
-                          : "Thêm vào yêu thích"}
+                        : isBookmark
+                          ? "Đã bookmark"
+                          : "Thêm vào bookmark"}
                     </span>
                   </button>
                   <button
