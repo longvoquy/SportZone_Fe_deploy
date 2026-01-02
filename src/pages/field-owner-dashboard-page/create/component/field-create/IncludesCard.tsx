@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { Loading } from '@/components/ui/loading';
 import { ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ interface IncludesCardProps {
     sportType?: string; // To filter amenities by sport type
 }
 
-export default function IncludesCard({ selectedIncludes, onIncludesChange, sportType }: IncludesCardProps) {
+export default memo(function IncludesCard({ selectedIncludes, onIncludesChange, sportType }: IncludesCardProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const { amenities, loading } = useAppSelector((state) => state.amenities);
 
@@ -167,4 +167,4 @@ export default function IncludesCard({ selectedIncludes, onIncludesChange, sport
             )}
         </Card>
     );
-}
+});

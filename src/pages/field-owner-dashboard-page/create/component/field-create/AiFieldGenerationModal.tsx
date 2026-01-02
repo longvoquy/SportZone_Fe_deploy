@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, memo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,12 +20,12 @@ interface AiFieldGenerationModalProps {
     isLoading: boolean;
 }
 
-export const AiFieldGenerationModal: React.FC<AiFieldGenerationModalProps> = ({
+export const AiFieldGenerationModal = memo(({
     isOpen,
     onClose,
     onGenerate,
     isLoading
-}) => {
+}: AiFieldGenerationModalProps) => {
     const [name, setName] = useState('');
     const [sportType, setSportType] = useState('football');
     const [address, setAddress] = useState('');
@@ -212,4 +212,4 @@ export const AiFieldGenerationModal: React.FC<AiFieldGenerationModalProps> = ({
             </DialogContent>
         </Dialog>
     );
-};
+});

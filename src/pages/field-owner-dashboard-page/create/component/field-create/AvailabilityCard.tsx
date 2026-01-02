@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { ChevronDown, Plus, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -40,7 +40,7 @@ interface AvailabilityCardProps {
     onSaveAvailability: () => void;
 }
 
-export default function AvailabilityCard({
+export default memo(function AvailabilityCard({
     selectedDays,
     dayAvailability,
     editingDay,
@@ -281,4 +281,4 @@ export default function AvailabilityCard({
             )}
         </Card>
     );
-}
+});

@@ -7,7 +7,7 @@ interface FieldOwnerDashboardLayoutProps {
     children: React.ReactNode
 }
 
-export function FieldOwnerDashboardLayout({ 
+export function FieldOwnerDashboardLayout({
     children
 }: FieldOwnerDashboardLayoutProps) {
     return (
@@ -19,9 +19,9 @@ export function FieldOwnerDashboardLayout({
                     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border bg-background px-4">
                         <SidebarTrigger className="-ml-1" />
                     </header>
-                    
+
                     {/* Main content */}
-                    <main className="flex flex-1 flex-col overflow-auto bg-gray-50">
+                    <main id="field-owner-dashboard-main" className="flex flex-1 flex-col overflow-auto bg-gray-50">
                         {children}
                     </main>
                 </SidebarInset>

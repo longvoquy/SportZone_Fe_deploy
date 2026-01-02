@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ interface PriceCardProps {
     onApplyDefaultHours: (start: string, end: string) => void;
 }
 
-export default function PriceCard({ formData, onInputChange, onApplyDefaultHours }: PriceCardProps) {
+export default memo(function PriceCard({ formData, onInputChange, onApplyDefaultHours }: PriceCardProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [defaultStart, setDefaultStart] = useState<string>('06:00');
     const [defaultEnd, setDefaultEnd] = useState<string>('22:00');
@@ -26,7 +26,7 @@ export default function PriceCard({ formData, onInputChange, onApplyDefaultHours
         setIsExpanded(!isExpanded);
     };
 
-    
+
 
     return (
         <Card className="bg-white shadow-md border-0">
@@ -105,4 +105,4 @@ export default function PriceCard({ formData, onInputChange, onApplyDefaultHours
             )}
         </Card>
     );
-}
+});

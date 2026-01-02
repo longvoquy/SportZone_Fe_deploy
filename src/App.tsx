@@ -17,7 +17,7 @@ import { RootLayout } from "./components/layouts/root-layout";
 import { centerRoutes, coachRoutes, fieldOwnerRoutes, guestRoutes, userRoutes } from "./routes/routes-config";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, ScrollRestoration } from 'react-router-dom';
 import { UserSyncProvider } from "./components/providers";
 import FloatingChatWidget from "./components/chat/floating-chat-widget";
 import './App.css';
@@ -35,7 +35,12 @@ import { Toaster } from "@/components/ui/sonner";
 
 const router = createBrowserRouter([
   {
-    element: <RootLayout />,
+    element: (
+      <>
+        <ScrollRestoration />
+        <RootLayout />
+      </>
+    ),
     children: [
       ...guestRoutes,
       ...userRoutes,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { ChevronDown, Upload, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,7 @@ interface GalleryCardProps {
     maxGalleryImages?: number; // Maximum number of gallery images allowed
 }
 
-export default function GalleryCard({
+export default memo(function GalleryCard({
     avatarPreview,
     onAvatarUpload,
     onRemoveAvatar,
@@ -182,4 +182,4 @@ export default function GalleryCard({
             )}
         </Card>
     );
-}
+});

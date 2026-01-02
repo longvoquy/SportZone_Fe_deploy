@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { ImageModal } from "@/components/ui/image-modal"
 
 interface GalleryCardProps {
@@ -11,7 +11,6 @@ interface GalleryCardProps {
 }
 
 export const GalleryCard: React.FC<GalleryCardProps> = ({ refObj, id, images, fallback }) => {
-  const [isExpanded, setIsExpanded] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalIndex, setModalIndex] = useState(0)
@@ -76,16 +75,11 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({ refObj, id, images, fa
   return (
     <>
       <Card ref={refObj as any} id={id} className="shadow-md border-0 bg-white">
-        <CardHeader onClick={() => setIsExpanded(!isExpanded)} className="cursor-pointer hover:bg-gray-50 transition-colors duration-200">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base md:text-lg">Thư viện ảnh</CardTitle>
-            <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
-          </div>
+        <CardHeader>
+          <CardTitle className="text-base md:text-lg">Thư viện ảnh</CardTitle>
         </CardHeader>
-        {isExpanded && (
-          <>
-            <hr className="border-t border-gray-300 my-0 mx-6" />
-            <CardContent className="pt-6">
+        <hr className="border-t border-gray-300 my-0 mx-6" />
+        <CardContent className="pt-6">
               {displayImages.length > 0 ? (
                 <div 
                   ref={viewportRef}
@@ -165,9 +159,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({ refObj, id, images, fa
                   Chưa có ảnh nào
                 </div>
               )}
-            </CardContent>
-          </>
-        )}
+        </CardContent>
       </Card>
 
       <ImageModal

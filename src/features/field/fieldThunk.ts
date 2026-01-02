@@ -370,14 +370,28 @@ export const createFieldWithImages = createAsyncThunk<
         // Location must be a JSON string with address and geo.coordinates
         // Use locationData if provided, otherwise construct from payload.location
         let locationObject;
-        if (locationData && locationData.geo.coordinates[0] !== 0 && locationData.geo.coordinates[1] !== 0) {
+
+        if (locationData &&
+            locationData.address &&
+            typeof locationData.address === 'string' &&
+            locationData.address.trim() !== '' &&
+            locationData.geo.coordinates[0] !== 0 &&
+            locationData.geo.coordinates[1] !== 0) {
             locationObject = locationData;
-        } else if (typeof payload.location === 'object' && payload.location && 'geo' in payload.location) {
+        } else if (typeof payload.location === 'object' && payload.location && 'geo' in payload.location && payload.location.address) {
             locationObject = payload.location;
         } else {
             // Fallback: if only string address is provided
+            const addressString = typeof payload.location === 'string' ? payload.location :
+                (typeof payload.location === 'object' && payload.location?.address) ? payload.location.address : '';
+
+            if (!addressString || addressString.trim() === '') {
+                logger.error("Location address is missing");
+                throw new Error('Location address is required and must be a string');
+            }
+
             locationObject = {
-                address: payload.location as string || "",
+                address: addressString,
                 geo: {
                     type: "Point" as const,
                     coordinates: [0, 0] as [number, number]
@@ -385,7 +399,17 @@ export const createFieldWithImages = createAsyncThunk<
             };
         }
 
-        logger.debug("Location object:", locationObject);
+        // Final validation: ensure address is a non-empty string
+        if (!locationObject.address || typeof locationObject.address !== 'string' || locationObject.address.trim() === '') {
+            logger.error("Location validation failed:", { address: locationObject.address, type: typeof locationObject.address });
+            throw new Error('Location address is required and must be a string');
+        }
+
+        logger.debug("Location to send:", {
+            address: locationObject.address.substring(0, 50) + '...',
+            coordinates: locationObject.geo.coordinates
+        });
+
         formData.append("location", JSON.stringify(locationObject));
 
         // Debug: Log operating hours before processing

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { ChevronDown, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ interface RulesCardProps {
     onRulesChange: (rules: string[]) => void;
 }
 
-export default function RulesCard({ rules, onRulesChange }: RulesCardProps) {
+export default memo(function RulesCard({ rules, onRulesChange }: RulesCardProps) {
     const [isExpanded, setIsExpanded] = useState(true);
 
     const toggleExpanded = () => {
@@ -82,4 +82,4 @@ export default function RulesCard({ rules, onRulesChange }: RulesCardProps) {
             )}
         </Card>
     );
-}
+});

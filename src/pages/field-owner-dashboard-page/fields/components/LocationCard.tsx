@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Navigation, ChevronDown, MapPin } from "lucide-react"
+import { Navigation, MapPin } from "lucide-react"
 import L from "leaflet"
 import { getFieldPinIcon } from "@/utils/fieldPinIcon"
 
@@ -17,7 +17,6 @@ export const LocationCard: React.FC<LocationCardProps> = ({ refObj, id, addressT
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
-  const [isExpanded, setIsExpanded] = useState(true)
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -162,22 +161,17 @@ export const LocationCard: React.FC<LocationCardProps> = ({ refObj, id, addressT
 
   return (
     <Card ref={refObj as any} id={id} className="shadow-md border-0 bg-white scroll-mt-24">
-      <CardHeader onClick={() => setIsExpanded(!isExpanded)} className="cursor-pointer hover:bg-gray-50 transition-colors duration-200">
+      <CardHeader>
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="text-xl">Vị trí</CardTitle>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" className="hover:bg-green-50 hover:border-green-500 bg-transparent" onClick={(e) => { e.stopPropagation(); handleOpenMaps(); }}>
-              <Navigation className="h-4 w-4 mr-2" />
-              Chỉ đường
-            </Button>
-            <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
-          </div>
+          <Button type="button" variant="outline" size="sm" className="hover:bg-green-50 hover:border-green-500 bg-transparent" onClick={handleOpenMaps}>
+            <Navigation className="h-4 w-4 mr-2" />
+            Chỉ đường
+          </Button>
         </div>
       </CardHeader>
-      {isExpanded && (
-        <>
-          <hr className="border-t border-gray-300 my-0 mx-6" />
-          <CardContent className="pt-6 space-y-4">
+      <hr className="border-t border-gray-300 my-0 mx-6" />
+      <CardContent className="pt-6 space-y-4">
             {/* Address Display */}
             {addressText && (
               <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -195,9 +189,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({ refObj, id, addressT
             <div className="h-96 rounded-lg relative overflow-hidden border border-gray-200 bg-gray-50">
               <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-10" />
             </div>
-          </CardContent>
-        </>
-      )}
+      </CardContent>
     </Card>
   )
 }

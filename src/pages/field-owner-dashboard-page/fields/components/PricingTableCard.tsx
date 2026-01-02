@@ -1,6 +1,5 @@
-import React, { useMemo, useState } from "react"
+import React, { useMemo } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { ChevronDown } from "lucide-react"
 import { getSportDisplayNameVN } from "@/components/enums/ENUMS"
 
 interface PriceRange {
@@ -36,7 +35,6 @@ export const PricingTableCard: React.FC<PricingTableCardProps> = ({
   basePrice = 0,
   sportType = "",
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true)
 
   // Group price ranges by time slots
   const groupedPrices = useMemo(() => {
@@ -121,36 +119,24 @@ export const PricingTableCard: React.FC<PricingTableCardProps> = ({
   if (!priceRanges || priceRanges.length === 0 || !basePrice) {
     return (
       <Card ref={refObj as any} id={id} className="shadow-md border-0 bg-white">
-        <CardHeader onClick={() => setIsExpanded(!isExpanded)} className="cursor-pointer hover:bg-gray-50 transition-colors duration-200">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base md:text-lg">Bảng giá sân</CardTitle>
-            <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
-          </div>
+        <CardHeader>
+          <CardTitle className="text-base md:text-lg">Bảng giá sân</CardTitle>
         </CardHeader>
-        {isExpanded && (
-          <>
-            <hr className="border-t border-gray-300 my-0 mx-6" />
-            <CardContent className="pt-6">
-              <p className="text-gray-500 text-center py-4">Chưa có thông tin bảng giá</p>
-            </CardContent>
-          </>
-        )}
+        <hr className="border-t border-gray-300 my-0 mx-6" />
+        <CardContent className="pt-6">
+          <p className="text-gray-500 text-center py-4">Chưa có thông tin bảng giá</p>
+        </CardContent>
       </Card>
     )
   }
 
   return (
     <Card ref={refObj as any} id={id} className="shadow-md border-0 bg-white">
-      <CardHeader onClick={() => setIsExpanded(!isExpanded)} className="cursor-pointer hover:bg-gray-50 transition-colors duration-200">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base md:text-lg">Bảng giá sân</CardTitle>
-          <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
-        </div>
+      <CardHeader>
+        <CardTitle className="text-base md:text-lg">Bảng giá sân</CardTitle>
       </CardHeader>
-      {isExpanded && (
-        <>
-          <hr className="border-t border-gray-300 my-0 mx-6" />
-          <CardContent className="pt-6">
+      <hr className="border-t border-gray-300 my-0 mx-6" />
+      <CardContent className="pt-6">
             {sportType && (
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-green-700">{getSportDisplayNameVN(sportType)}</h3>
@@ -185,9 +171,7 @@ export const PricingTableCard: React.FC<PricingTableCardProps> = ({
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </>
-      )}
+      </CardContent>
     </Card>
   )
 }

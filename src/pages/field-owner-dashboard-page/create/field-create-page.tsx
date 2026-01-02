@@ -24,6 +24,27 @@ import {
 import { AiFieldGenerationModal } from '@/pages/field-owner-dashboard-page/create/component/field-create/AiFieldGenerationModal';
 import { generateFieldFromAI } from '@/features/field/fieldThunk';
 import { Wand2 } from 'lucide-react'; // Import magic wand icon
+import { Loading } from '@/components/ui/loading';
+
+// Moved outside of component
+const availableDays = [
+    { value: 'monday', label: 'Thứ Hai' },
+    { value: 'tuesday', label: 'Thứ Ba' },
+    { value: 'wednesday', label: 'Thứ Tư' },
+    { value: 'thursday', label: 'Thứ Năm' },
+    { value: 'friday', label: 'Thứ Sáu' },
+    { value: 'saturday', label: 'Thứ Bảy' },
+    { value: 'sunday', label: 'Chủ Nhật' }
+];
+
+const availableMultipliers = [
+    { value: 0.5, label: '0.5x (Giảm 50%)' },
+    { value: 0.8, label: '0.8x (Giảm 20%)' },
+    { value: 1.0, label: '1.0x (Giá bình thường)' },
+    { value: 1.2, label: '1.2x (Tăng 20%)' },
+    { value: 1.5, label: '1.5x (Tăng 50%)' },
+    { value: 2.0, label: '2.0x (Tăng 100%)' }
+];
 
 export default function FieldCreatePage() {
     const dispatch = useAppDispatch();
@@ -154,14 +175,14 @@ export default function FieldCreatePage() {
     }, [dispatch, formData.sportType]);
 
     // Form handlers
-    const handleInputChange = (field: string, value: any) => {
+    const handleInputChange = useCallback((field: string, value: any) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
-    };
+    }, []);
 
-    const handleOperatingHoursChange = (day: string, field: 'start' | 'end' | 'duration', value: string | number) => {
+    const handleOperatingHoursChange = useCallback((day: string, field: 'start' | 'end' | 'duration', value: string | number) => {
         setFormData(prev => {
             const existingIndex = prev.operatingHours.findIndex(oh => oh.day === day);
             const updatedHours = [...prev.operatingHours];
@@ -185,18 +206,18 @@ export default function FieldCreatePage() {
                 operatingHours: updatedHours
             };
         });
-    };
+    }, []);
 
-    const handlePriceRangeChange = (index: number, field: keyof PriceRange, value: any) => {
+    const handlePriceRangeChange = useCallback((index: number, field: keyof PriceRange, value: any) => {
         setFormData(prev => ({
             ...prev,
             priceRanges: prev.priceRanges.map((range, i) =>
                 i === index ? { ...range, [field]: value } : range
             )
         }));
-    };
+    }, []);
 
-    const addPriceRange = (day: string) => {
+    const addPriceRange = useCallback((day: string) => {
         setFormData(prev => {
             const toMinutes = (t: string) => {
                 const [hh = '00', mm = '00'] = (t || '00:00').split(':');
@@ -230,15 +251,15 @@ export default function FieldCreatePage() {
                 priceRanges: [...prev.priceRanges, newPriceRange]
             };
         });
-    };
+    }, []);
 
 
-    const removePriceRange = (index: number) => {
+    const removePriceRange = useCallback((index: number) => {
         setFormData(prev => ({
             ...prev,
             priceRanges: prev.priceRanges.filter((_, i) => i !== index)
         }));
-    };
+    }, []);
 
     const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -271,64 +292,112 @@ export default function FieldCreatePage() {
         });
     };
 
-    // Form validation
+    // Form validation - Enhanced to catch issues before API call
     const validateForm = (): boolean => {
+        // 1. Basic required fields
         if (!formData.name.trim()) {
-            CustomFailedToast('Vui lòng nhập tên sân');
+            CustomFailedToast('Vui long nhap ten san');
             return false;
         }
         if (!formData.sportType) {
-            CustomFailedToast('Vui lòng chọn loại sân');
+            CustomFailedToast('Vui long chon loai san');
             return false;
         }
         if (!formData.description.trim()) {
-            CustomFailedToast('Vui lòng nhập mô tả sân');
+            CustomFailedToast('Vui long nhap mo ta san');
             return false;
         }
+
+        // 2. Location validation
         const locationString = typeof formData.location === 'string'
             ? formData.location
             : formData.location?.address || '';
-        if (!locationString.trim()) {
-            CustomFailedToast('Vui lòng nhập địa chỉ sân');
+        if (!locationString.trim() && !locationData.address?.trim()) {
+            CustomFailedToast('Vui long nhap dia chi san');
             return false;
         }
-        // Check if coordinates are valid (not default 0,0)
         if (locationData.geo.coordinates[0] === 0 && locationData.geo.coordinates[1] === 0) {
-            CustomFailedToast('Vui lòng chọn vị trí sân trên bản đồ hoặc tìm kiếm địa chỉ');
+            CustomFailedToast('Vui long chon vi tri san tren ban do');
             return false;
         }
+
+        // 3. Price validation
         if (!formData.basePrice || Number(formData.basePrice) <= 0) {
-            CustomFailedToast('Vui lòng nhập giá cơ bản hợp lệ');
+            CustomFailedToast('Gia co ban phai lon hon 0');
             return false;
         }
-        // Validate maxSlots - giới hạn tối đa là 4
-        if (formData.maxSlots && Number(formData.maxSlots) > 4) {
-            CustomFailedToast('Số slot tối đa không được vượt quá 4');
+
+        // 4. Slot validation
+        if (formData.slotDuration < 30 || formData.slotDuration > 180) {
+            CustomFailedToast('Thoi luong slot phai tu 30-180 phut');
             return false;
         }
+        if (formData.minSlots < 1) {
+            CustomFailedToast('So slot toi thieu phai lon hon 0');
+            return false;
+        }
+        if (formData.maxSlots < 1) {
+            CustomFailedToast('So slot toi da phai lon hon 0');
+            return false;
+        }
+        if (formData.maxSlots > 4) {
+            CustomFailedToast('So slot toi da khong duoc vuot qua 4');
+            return false;
+        }
+
+        // 5. Day selection validation
         if (selectedDays.length === 0) {
-            CustomFailedToast('Vui lòng chọn ít nhất một ngày hoạt động');
+            CustomFailedToast('Vui long chon it nhat mot ngay hoat dong');
             return false;
         }
-        const availableDays = selectedDays.filter(day => dayAvailability[day] === true);
-        if (availableDays.length === 0) {
-            CustomFailedToast('Vui lòng bật ít nhất một ngày hoạt động');
+        const availableDaysList = selectedDays.filter(day => dayAvailability[day] === true);
+        if (availableDaysList.length === 0) {
+            CustomFailedToast('Vui long bat it nhat mot ngay hoat dong');
             return false;
         }
+
+        // 6. OperatingHours structure validation for each selected day
+        for (const day of availableDaysList) {
+            const dayHours = formData.operatingHours.find(oh => oh.day === day);
+            if (!dayHours || !dayHours.day || !dayHours.start || !dayHours.end || !dayHours.duration) {
+                CustomFailedToast(`Thieu thong tin gio hoat dong cho ngay ${day}`);
+                return false;
+            }
+        }
+
+        // 7. Image validation (MOVED FROM BE)
+        if (!avatarFile && galleryFiles.length === 0) {
+            CustomFailedToast('Vui long tai len it nhat 1 hinh anh cho san');
+            return false;
+        }
+
         return true;
     };
 
     // Form submission
     const handleSubmit = async () => {
         if (!validateForm()) return;
-
         try {
             dispatch(clearErrors());
-            //CustomSuccessToast('Đang gửi yêu cầu tạo sân...');
 
-            // Convert basePrice to number before sending
+            // Sync operatingHours: ensure all selected days have valid data
+            const availableDaysList = selectedDays.filter(day => dayAvailability[day] === true);
+            let syncedOperatingHours = [...formData.operatingHours];
+
+            for (const day of availableDaysList) {
+                const exists = syncedOperatingHours.find(oh => oh.day === day);
+                if (!exists) {
+                    syncedOperatingHours.push({
+                        day,
+                        start: '06:00',
+                        end: '22:00',
+                        duration: formData.slotDuration || 60
+                    });
+                }
+            }
+
             // Filter operating hours and price ranges to only include selected and available days
-            const filteredOperatingHours = formData.operatingHours.filter(oh =>
+            const filteredOperatingHours = syncedOperatingHours.filter(oh =>
                 selectedDays.includes(oh.day) && dayAvailability[oh.day] === true
             );
 
@@ -353,8 +422,13 @@ export default function FieldCreatePage() {
 
             };
 
-            // Debug: log payload prior to submit
-            logger.debug('CreateField submitData', submitData);
+            // Ensure locationData has valid address before submitting
+            const finalLocationData: FieldLocation = {
+                ...locationData,
+                address: locationData.address && locationData.address.trim() !== ''
+                    ? locationData.address
+                    : (typeof formData.location === 'string' ? formData.location : formData.location?.address || '')
+            };
 
             if (avatarFile || galleryFiles.length > 0) {
                 // Prepare files with suffixes for backend identification
@@ -373,21 +447,33 @@ export default function FieldCreatePage() {
                 const resWithImages = await dispatch(createFieldWithImages({
                     payload: submitData,
                     images: filesToUpload,
-                    locationData: locationData
+                    locationData: finalLocationData
                 })).unwrap();
                 logger.debug('CreateField API response (with images):', resWithImages);
                 CustomSuccessToast('Tạo sân thành công với hình ảnh!');
-                setTimeout(() => navigate('/field-owner/fields'), 1500);
+
+                // Navigate to the newly created field detail page
+                if (resWithImages.data?.id) {
+                    navigate(`/field-owner/fields/${resWithImages.data.id}`);
+                } else {
+                    navigate('/field-owner/fields');
+                }
             } else {
                 // Create field without images - need to update submitData with location object
                 const payloadWithLocation = {
                     ...submitData,
-                    location: locationData
+                    location: finalLocationData
                 };
                 const resNoImages = await dispatch(createField(payloadWithLocation)).unwrap();
                 logger.debug('CreateField API response (no images):', resNoImages);
                 CustomSuccessToast('Tạo sân thành công!');
-                setTimeout(() => navigate('/field-owner/fields'), 1500);
+
+                // Navigate to the newly created field detail page
+                if (resNoImages.data?.id) {
+                    navigate(`/field-owner/fields/${resNoImages.data.id}`);
+                } else {
+                    navigate('/field-owner/fields');
+                }
             }
 
             // Reset form
@@ -430,34 +516,15 @@ export default function FieldCreatePage() {
             CustomFailedToast(createWithImagesError.message || 'Có lỗi xảy ra khi tạo sân với hình ảnh');
         }
     }, [createError, createWithImagesError]);
+
+    // These were moved/fixed from being duplicated at the end of the file
     const [selectedDays, setSelectedDays] = useState<string[]>([])
     const [dayAvailability, setDayAvailability] = useState<Record<string, boolean>>({})
     const [editingDay, setEditingDay] = useState<string | null>(null)
 
-    // Available days and multipliers for user selection
-    const availableDays = [
-        { value: 'monday', label: 'Thứ Hai' },
-        { value: 'tuesday', label: 'Thứ Ba' },
-        { value: 'wednesday', label: 'Thứ Tư' },
-        { value: 'thursday', label: 'Thứ Năm' },
-        { value: 'friday', label: 'Thứ Sáu' },
-        { value: 'saturday', label: 'Thứ Bảy' },
-        { value: 'sunday', label: 'Chủ Nhật' }
-    ];
-
-    const availableMultipliers = [
-        { value: 0.5, label: '0.5x (Giảm 50%)' },
-        { value: 0.8, label: '0.8x (Giảm 20%)' },
-        { value: 1.0, label: '1.0x (Giá bình thường)' },
-        { value: 1.2, label: '1.2x (Tăng 20%)' },
-        { value: 1.5, label: '1.5x (Tăng 50%)' },
-        { value: 2.0, label: '2.0x (Tăng 100%)' }
-    ];
-
-    const toggleDay = (day: string) => {
+    const toggleDay = useCallback((day: string) => {
         setSelectedDays((prev) => {
             if (prev.includes(day)) {
-                // Only unselect the day; keep existing operatingHours/priceRanges to preserve applied values
                 setDayAvailability(prevAvail => {
                     const newAvailability = { ...prevAvail };
                     delete newAvailability[day];
@@ -465,7 +532,6 @@ export default function FieldCreatePage() {
                 });
                 return prev.filter((d) => d !== day);
             } else {
-                // Select the day; if no hours exist yet, seed defaults.
                 setFormData(formData => {
                     const existingHours = formData.operatingHours.find(oh => oh.day === day);
                     if (!existingHours) {
@@ -491,21 +557,20 @@ export default function FieldCreatePage() {
                 return [...prev, day];
             }
         });
-    }
+    }, []);
 
-    const toggleDayAvailability = (day: string) => {
+    const toggleDayAvailability = useCallback((day: string) => {
         setDayAvailability((prev) => ({
             ...prev,
             [day]: !prev[day],
         }))
-    }
+    }, []);
 
-    const handleEditDay = (day: string) => {
-        setEditingDay(editingDay === day ? null : day)
-    }
+    const handleEditDay = useCallback((day: string) => {
+        setEditingDay(prev => prev === day ? null : day)
+    }, []);
 
-
-    const handleResetAvailability = () => {
+    const handleResetAvailability = useCallback(() => {
         setSelectedDays([])
         setDayAvailability({})
         setFormData(prev => ({
@@ -513,7 +578,7 @@ export default function FieldCreatePage() {
             operatingHours: [],
             priceRanges: []
         }))
-    }
+    }, []);
 
     const handleSaveAvailability = () => {
     }
@@ -526,7 +591,7 @@ export default function FieldCreatePage() {
             name: 'Sân Thể Thao Test Đà Nẵng',
             sportType: 'football',
             description: 'Sân test để kiểm thử luồng tạo sân. Sân chuẩn 5 người, bề mặt cỏ nhân tạo.',
-            location: 'Đà Nẵng, Việt Nam',
+            location: 'Hải Châu, Đà Nẵng, Việt Nam',
             operatingHours: defaultHours,
             priceRanges: [
                 { day: 'monday', start: '06:00', end: '17:00', multiplier: 1.0 },
@@ -536,10 +601,10 @@ export default function FieldCreatePage() {
         }));
         // Set sample location data for Da Nang
         setLocationData({
-            address: 'Đà Nẵng, Việt Nam',
+            address: 'Hải Châu, Đà Nẵng, Việt Nam',
             geo: {
                 type: 'Point',
-                coordinates: [108.2022, 16.0544] // Da Nang coordinates [lng, lat]
+                coordinates: [108.2208, 16.0471] // Da Nang coordinates [lng, lat] - Hải Châu district
             }
         });
         setSelectedDays(allDays);
@@ -558,6 +623,15 @@ export default function FieldCreatePage() {
 
     return (
         <>
+            {(createLoading || createWithImagesLoading) && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center gap-4">
+                        <Loading size={50} />
+                        <p className="text-lg font-medium text-gray-700">Đang tạo sân...</p>
+                        <p className="text-sm text-gray-500">Vui lòng không tắt trình duyệt</p>
+                    </div>
+                </div>
+            )}
             <FieldOwnerDashboardLayout>
                 <div className="min-h-screen bg-background-secondary py-8">
                     <div className="max-w-7xl mx-auto space-y-12">

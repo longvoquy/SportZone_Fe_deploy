@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,7 @@ const sportTypeLabels: Record<string, string> = {
     [SportType.GYM]: 'Phòng gym'
 };
 
-export default function BasicInfoCard({ formData, onInputChange, showCourtCount = true }: BasicInfoCardProps) {
+export default memo(function BasicInfoCard({ formData, onInputChange, showCourtCount = true }: BasicInfoCardProps) {
     const [isExpanded, setIsExpanded] = useState(true);
 
     const toggleExpanded = () => {
@@ -119,4 +119,4 @@ export default function BasicInfoCard({ formData, onInputChange, showCourtCount 
         </Card>
 
     );
-}
+});

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ChevronDown, MapPin, Search } from 'lucide-react';
@@ -35,7 +35,7 @@ interface GeocodingResult {
 }
 
 // Constants
-const DEFAULT_CENTER: [number, number] = [16.0544, 108.2022]; // Đà Nẵng
+const DEFAULT_CENTER: [number, number] = [16.0471, 108.2208]; // Đà Nẵng - Hải Châu
 const MAP_CONFIG = {
     zoom: 13,
     maxZoom: 19,
@@ -105,17 +105,43 @@ const searchLocation = async (query: string): Promise<GeocodingResult | null> =>
     return null;
 };
 const reverseGeocode = async (lat: number, lon: number): Promise<string | null> => {
-    try {
-        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=vi`;
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data.display_name ?? null;
-    } catch {
-        return null;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=vi`;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+
+            if (!res.ok) {
+                if (attempt < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    continue;
+                }
+                return null;
+            }
+
+            const data = await res.json();
+            const address = data.display_name ?? null;
+
+            if (address) {
+                return address;
+            }
+
+            return null;
+        } catch (error) {
+            logger.error(`Reverse geocode attempt ${attempt} failed:`, error);
+            if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                continue;
+            }
+            return null;
+        }
     }
+
+    return null;
 };
-export default function LocationCard({
+export default memo(function LocationCard({
     formData,
     onInputChange,
     onCoordinatesChange,
@@ -187,7 +213,8 @@ export default function LocationCard({
 
             (async () => {
                 const addr = await reverseGeocode(pos.lat, pos.lng);
-                const address = addr ?? addressRef.current;
+                // Ensure we always have a non-empty address string
+                const address = addr || addressRef.current || `Vị trí: ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
 
                 addressRef.current = address;
                 onInputChange('location', address);
@@ -226,16 +253,20 @@ export default function LocationCard({
         onCoordinatesChange?.(lat, lng);
 
         const addr = await reverseGeocode(lat, lng);
-        const address = addr ?? addressRef.current;
+        // Ensure we always have a non-empty address string
+        const address = addr || addressRef.current || `Vị trí: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
         addressRef.current = address;
         onInputChange('location', address);
-        onLocationChange?.({
-            address,
-            geo: { type: 'Point', coordinates: [lng, lat] },
-        });
 
-        logger.debug('Selected location (map click):', { address, lat, lng });
+        const locationPayload = {
+            address,
+            geo: { type: 'Point' as const, coordinates: [lng, lat] as [number, number] },
+        };
+
+        onLocationChange?.(locationPayload);
+
+        logger.debug('Selected location (map click):', { address, lat, lng, coordinates: [lng, lat] });
     }, [onCoordinatesChange, onLocationChange, onInputChange]);
 
     // Attach click handler
@@ -454,4 +485,4 @@ export default function LocationCard({
             )}
         </Card>
     );
-}
+});

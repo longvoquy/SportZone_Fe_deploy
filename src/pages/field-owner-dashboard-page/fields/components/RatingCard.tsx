@@ -1,25 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Loading } from "@/components/ui/loading"
-import { Star, ChevronDown, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react"
+import { Star, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { useAppDispatch, useAppSelector } from "@/store/hook"
-import { createFieldReviewThunk } from "@/features/reviews/reviewThunk"
 import { getReviewsForFieldAPI } from "@/features/reviews/reviewAPI"
-import { getFieldById } from "@/features/field/fieldThunk"
-import { CustomSuccessToast, CustomFailedToast } from "@/components/toast/notificiation-toast"
 import logger from "@/utils/logger"
 
 interface RatingCardProps {
@@ -31,24 +16,12 @@ interface RatingCardProps {
 }
 
 export const RatingCard: React.FC<RatingCardProps> = ({ refObj, id, ratingValue, reviewCount, fieldId }) => {
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [showReviewModal, setShowReviewModal] = useState(false)
-  const [reviewRating, setReviewRating] = useState(0)
-  const [hoveredRating, setHoveredRating] = useState(0)
-  const [reviewTitle, setReviewTitle] = useState("")
-  const [reviewComment, setReviewComment] = useState("")
-  const [reviewError, setReviewError] = useState<string | null>(null)
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
   const [fieldReviews, setFieldReviews] = useState<any[]>([])
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewsPage, setReviewsPage] = useState(1)
   const [reviewsTotalPages, setReviewsTotalPages] = useState(1)
   const REVIEW_PAGE_LIMIT = 5
   const [selectedRatingFilter, setSelectedRatingFilter] = useState<number | null>(null)
-
-  const dispatch = useAppDispatch()
-  const authUser = useAppSelector((state) => state.auth.user)
 
   // Calculate average rating and review count from actual reviews
   const calculatedRating = useMemo(() => {
@@ -127,129 +100,13 @@ export const RatingCard: React.FC<RatingCardProps> = ({ refObj, id, ratingValue,
     return fieldReviews.filter((rv) => Math.round(Number(rv.rating || 0)) === selectedRatingFilter)
   }, [fieldReviews, selectedRatingFilter])
 
-  useEffect(() => {
-    if (!showReviewModal) {
-      setReviewRating(0)
-      setHoveredRating(0)
-      setReviewTitle("")
-      setReviewComment("")
-      setReviewError(null)
-      setHasAcceptedTerms(false)
-      setIsSubmittingReview(false)
-    }
-  }, [showReviewModal])
-
-  const handleSubmitReview = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setReviewError(null)
-
-    if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
-      CustomFailedToast("Vui lòng chọn điểm đánh giá từ 1 đến 5")
-      return
-    }
-    if (!reviewComment || reviewComment.trim().length < 10) {
-      CustomFailedToast("Vui lòng nhập nội dung đánh giá (tối thiểu 10 ký tự)")
-      return
-    }
-    if (!hasAcceptedTerms) {
-      CustomFailedToast("Vui lòng đồng ý với Điều khoản & Điều kiện")
-      return
-    }
-
-    setIsSubmittingReview(true)
-    try {
-      const payload = {
-        type: "field" as const,
-        rating: reviewRating,
-        comment: reviewComment.trim(),
-        title: reviewTitle.trim() ? reviewTitle.trim() : undefined,
-        fieldId: fieldId,
-        bookingId: "", // Optional - can be enhanced later to select from user bookings
-      }
-
-      const action: any = await dispatch(createFieldReviewThunk(payload as any))
-
-      if (action?.meta?.requestStatus === "fulfilled") {
-        setShowReviewModal(false)
-        setReviewRating(0)
-        setHoveredRating(0)
-        setReviewTitle("")
-        setReviewComment("")
-        setHasAcceptedTerms(false)
-
-        CustomSuccessToast("Cảm ơn bạn — đánh giá đã được gửi.")
-
-        // Wait a bit for database to save, then refresh both reviews and field data
-        setTimeout(async () => {
-          try {
-            logger.debug('[RATING CARD] Refreshing reviews and field data after submit')
-            // Refresh reviews to show the new review
-            await fetchReviews(1, false)
-            // Refresh field data to update rating and reviewCount
-            await dispatch(getFieldById(fieldId))
-            logger.debug('[RATING CARD] Successfully refreshed data')
-          } catch (err) {
-            logger.error('[RATING CARD] Failed to refresh data after submit', err)
-          }
-        }, 800) // 800ms delay to ensure database has saved
-      } else {
-        const errData = action?.payload || {};
-        const message = typeof errData === 'string' ? errData : (errData.message || "Gửi đánh giá thất bại");
-        const flaggedWords = Array.isArray(errData.flaggedWords) ? errData.flaggedWords : [];
-
-        if (String(message).toLowerCase().includes('inappropriate') ||
-          String(message).toLowerCase().includes('profanity') ||
-          String(message).toLowerCase().includes('content')) {
-          let finalMsg = String(message);
-          if (flaggedWords.length > 0) {
-            finalMsg += ` Flagged words: ${flaggedWords.join(', ')}`;
-          }
-          setReviewError(finalMsg);
-        } else {
-          CustomFailedToast(String(message))
-        }
-      }
-    } catch (err: any) {
-      const msg = err?.message || "Gửi đánh giá thất bại";
-      if (String(msg).toLowerCase().includes('inappropriate') ||
-        String(msg).toLowerCase().includes('profanity')) {
-        setReviewError(String(msg));
-      } else {
-        CustomFailedToast(msg)
-      }
-    } finally {
-      setIsSubmittingReview(false)
-    }
-  }
-
   return (
-    <>
-      <Card ref={refObj as any} id={id} className="shadow-md border-0 bg-white">
-        <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors duration-200">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base md:text-lg">Đánh giá</CardTitle>
-            <div className="flex items-center gap-3">
-              {authUser && (
-                <Button
-                  onClick={() => setShowReviewModal(true)}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Viết đánh giá
-                </Button>
-              )}
-              <ChevronDown
-                onClick={() => setIsExpanded(!isExpanded)}
-                className={`w-5 h-5 transition-transform duration-200 cursor-pointer ${isExpanded ? "rotate-180" : "rotate-0"
-                  }`}
-              />
-            </div>
-          </div>
-        </CardHeader>
-        {isExpanded && (
-          <>
-            <hr className="border-t border-gray-300 my-0 mx-6" />
-            <CardContent className="pt-6">
+    <Card ref={refObj as any} id={id} className="shadow-md border-0 bg-white">
+      <CardHeader>
+        <CardTitle className="text-base md:text-lg">Đánh giá</CardTitle>
+      </CardHeader>
+        <hr className="border-t border-gray-300 my-0 mx-6" />
+        <CardContent className="pt-6">
               {/* Rating Summary Section */}
               <div className="bg-gray-50 rounded-lg p-6 mb-6">
                 <div className="flex items-start gap-8">
@@ -446,137 +303,8 @@ export const RatingCard: React.FC<RatingCardProps> = ({ refObj, id, ratingValue,
                   </Button>
                 </div>
               )}
-            </CardContent>
-          </>
-        )}
-      </Card>
-
-      {/* Review Modal */}
-      <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Viết đánh giá</DialogTitle>
-            <DialogDescription>Chia sẻ trải nghiệm của bạn về sân thể thao này</DialogDescription>
-          </DialogHeader>
-          <form className="space-y-6 py-4" onSubmit={handleSubmitReview}>
-            {/* Tiêu đề đánh giá (optional) */}
-            {reviewError && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md flex items-start gap-2 text-sm mb-4">
-                <AlertCircle className="h-5 w-5 shrink-0" />
-                <span>{reviewError}</span>
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="review-title" className="text-sm font-semibold">
-                Tiêu đề đánh giá
-              </Label>
-              <Input
-                id="review-title"
-                placeholder="Nếu mô tả trong một câu, bạn sẽ nói gì?"
-                value={reviewTitle}
-                onChange={(e) => setReviewTitle(e.target.value)}
-              />
-            </div>
-
-            {/* Điểm đánh giá */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">
-                Điểm đánh giá <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setReviewRating(star)}
-                      onMouseEnter={() => setHoveredRating(star)}
-                      onMouseLeave={() => setHoveredRating(0)}
-                      className="transition-transform hover:scale-110 focus:outline-none"
-                    >
-                      <Star
-                        className={`h-8 w-8 transition-colors ${star <= (hoveredRating || reviewRating)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
-                          }`}
-                      />
-                    </button>
-                  ))}
-                </div>
-                {reviewRating > 0 && (
-                  <span className="text-sm font-semibold text-gray-600 ml-2">
-                    {reviewRating}.0
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Nội dung đánh giá */}
-            <div className="space-y-2">
-              <Label htmlFor="review-comment" className="text-sm font-semibold">
-                Đánh giá chi tiết <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="review-comment"
-                placeholder="Chia sẻ trải nghiệm của bạn về sân thể thao này (tối thiểu 10 ký tự)..."
-                rows={6}
-                className="resize-none"
-                value={reviewComment}
-                onChange={(e) => setReviewComment(e.target.value)}
-                minLength={10}
-              />
-              <p className={`text-xs ${reviewComment.trim().length >= 10 ? "text-green-600" : "text-gray-500"}`}>
-                {reviewComment.trim().length}/500 ký tự tối đa
-              </p>
-            </div>
-
-            {/* Điều khoản & điều kiện */}
-            <div className="flex items-start gap-2 pt-1">
-              <Checkbox
-                id="review-terms"
-                checked={hasAcceptedTerms}
-                onCheckedChange={(checked) => setHasAcceptedTerms(!!checked)}
-              />
-              <label
-                htmlFor="review-terms"
-                className="text-xs text-gray-600 leading-snug cursor-pointer select-none"
-              >
-                Tôi đã đọc và đồng ý với{" "}
-                <span className="text-green-700 font-medium">Điều khoản &amp; Điều kiện</span>
-              </label>
-            </div>
-
-            {/* Nút hành động */}
-            <div className="flex gap-3 pt-4 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowReviewModal(false)
-                  setReviewRating(0)
-                  setHoveredRating(0)
-                  setReviewTitle("")
-                  setReviewComment("")
-                  setReviewError(null)
-                  setHasAcceptedTerms(false)
-                }}
-                className="flex-1 hover:bg-gray-50 bg-transparent"
-              >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2"
-                disabled={isSubmittingReview}
-              >
-                {isSubmittingReview && <Loading size={16} />}
-                {isSubmittingReview ? "Đang gửi..." : "Gửi đánh giá"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
+        </CardContent>
+    </Card>
   )
 }
 
