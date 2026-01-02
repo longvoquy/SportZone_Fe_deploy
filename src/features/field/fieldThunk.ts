@@ -476,7 +476,7 @@ export const updateField = createAsyncThunk<
     { rejectValue: ErrorResponse }
 >("field/updateField", async ({ id, payload }, thunkAPI) => {
     try {
-        const response = await axiosPrivate.put(UPDATE_FIELD_API(id), payload);
+        const response = await axiosPrivate.patch(UPDATE_FIELD_API(id), payload);
         logger.debug("Update field response:", response.data);
 
         const raw = response.data;
@@ -531,17 +531,20 @@ export const updateFieldWithImages = createAsyncThunk<
         }
 
         if (payload.operatingHours) {
-            const oh = payload.operatingHours.map(o => ({
-                ...o,
-                duration: o.duration.toString()
-            }));
+            const oh = payload.operatingHours.map(o => {
+                const duration = (o as any)?.duration ?? payload.slotDuration;
+                return {
+                    ...o,
+                    duration: (duration ?? 60).toString(),
+                };
+            });
             formData.append("operatingHours", JSON.stringify(oh));
         }
 
         if (payload.priceRanges) {
             const pr = payload.priceRanges.map(p => ({
                 ...p,
-                multiplier: p.multiplier.toString()
+                multiplier: ((p as any)?.multiplier ?? 1).toString(),
             }));
             formData.append("priceRanges", JSON.stringify(pr));
         }
@@ -549,7 +552,7 @@ export const updateFieldWithImages = createAsyncThunk<
         if (payload.amenities) {
             const am = payload.amenities.map(a => ({
                 ...a,
-                price: a.price.toString()
+                price: ((a as any)?.price ?? 0).toString(),
             }));
             formData.append("amenities", JSON.stringify(am));
         }
