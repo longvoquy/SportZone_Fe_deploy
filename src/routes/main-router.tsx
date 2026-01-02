@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import {
   guestRoutes, // Includes publicRoutes + legacy routes
   userRoutes,
@@ -9,6 +9,8 @@ import {
 } from "./routes-config";
 import { UnauthorizedPage } from "./protected-routes-config";
 import { RootLayout } from "../components/layouts/root-layout";
+import GeneralError from "../pages/error/general-error";
+import NotFoundError from "../pages/error/not-found-error";
 
 /**
  * ===== MAIN ROUTER CONFIGURATION =====
@@ -19,6 +21,7 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <RootLayout />,
+    errorElement: <GeneralError />,
     children: [
       // Public & Guest routes (accessible to all)
       ...guestRoutes,
@@ -36,10 +39,10 @@ export const router = createBrowserRouter([
         element: <UnauthorizedPage />,
       },
 
-      // Catch-all route - redirect to home
+      // Catch-all route - associated with 404
       {
         path: "*",
-        element: <Navigate to="/" replace />,
+        element: <NotFoundError />,
       },
     ],
   },

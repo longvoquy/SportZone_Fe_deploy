@@ -48,9 +48,12 @@ export const PricingTableCard: React.FC<PricingTableCardProps> = ({
     const timeSlotMap = new Map<string, { days: string[]; start: string; end: string; multiplier: number; price: number }>()
 
     priceRanges.forEach((range) => {
+      // Skip if essential data is missing
+      if (!range.start || !range.end) return;
+
       const key = `${range.start}-${range.end}-${range.multiplier}`
       const price = Math.round(basePrice * range.multiplier)
-      
+
       if (timeSlotMap.has(key)) {
         const existing = timeSlotMap.get(key)!
         existing.days.push(range.day)
@@ -81,24 +84,29 @@ export const PricingTableCard: React.FC<PricingTableCardProps> = ({
 
   // Format time from "HH:mm" to "Hh" format
   const formatTime = (time: string) => {
-    const [hours] = time.split(":")
-    return `${parseInt(hours)}h`
+    if (!time) return ""
+    try {
+      const [hours] = time.split(":")
+      return `${parseInt(hours)}h`
+    } catch (e) {
+      return time
+    }
   }
 
   // Format day range (e.g., "T2 - CN" or "T2, T3")
   const formatDayRange = (days: string[]) => {
     if (days.length === 0) return ""
     if (days.length === 1) return dayNames[days[0]] || days[0]
-    
+
     // Check if all days are consecutive
     const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
     const sortedDays = [...days].sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b))
-    
+
     // Check if it's a full week
     if (sortedDays.length === 7) {
       return "T2 - CN"
     }
-    
+
     // Check if consecutive
     let isConsecutive = true
     for (let i = 1; i < sortedDays.length; i++) {
@@ -109,11 +117,11 @@ export const PricingTableCard: React.FC<PricingTableCardProps> = ({
         break
       }
     }
-    
+
     if (isConsecutive && sortedDays.length > 1) {
       return `${dayNames[sortedDays[0]]} - ${dayNames[sortedDays[sortedDays.length - 1]]}`
     }
-    
+
     // Not consecutive, join with comma
     return sortedDays.map(d => dayNames[d] || d).join(", ")
   }

@@ -78,6 +78,13 @@ const CreateTournamentPage = lazy(() => import("@/pages/create-tournament/Create
 const TournamentDetailPage = lazy(() => import("@/pages/tournament-detail-page/tournament-detail-page.tsx"));
 const MyReportsPage = lazy(() => import("../pages/my-reports-page/my-reports-page"));
 
+// Error Pages
+import GeneralError from "../pages/error/general-error";
+import NotFoundError from "../pages/error/not-found-error";
+import MaintenanceError from "../pages/error/maintenance-error";
+import UnauthorizedError from "../pages/error/unauthorized-error";
+import ForbiddenError from "../pages/error/forbidden-error";
+
 /**
  * Placeholder component for pages under development
  */
@@ -112,6 +119,13 @@ export const publicRoutes: RouteObject[] = [
   // PayOS Payment Pages
   { path: "/transactions/payos/return", element: <PayOSReturnPage /> },
   { path: "/transactions/payos/cancel", element: <PayOSCancelPage /> },
+
+  // Error Pages
+  { path: "/500", element: <GeneralError /> },
+  { path: "/404", element: <NotFoundError /> },
+  { path: "/403", element: <ForbiddenError /> },
+  { path: "/401", element: <UnauthorizedError /> },
+  { path: "/503", element: <MaintenanceError /> },
 
   // Field Discovery & Booking (Public)
   { path: "/fields", element: <FieldBookingPage /> },
