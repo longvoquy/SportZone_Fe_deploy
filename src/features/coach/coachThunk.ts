@@ -7,9 +7,7 @@ import type {
     ErrorResponse,
     CoachProfileResponse,
     PublicCoachesResponse,
-    SportType as SportTypeType,
 } from "../../types/coach-type";
-import { SportType as SPORT_TYPE_CONST } from "../../types/coach-type";
 import axiosPublic from "../../utils/axios/axiosPublic";
 import axiosUpload from "../../utils/axios/axiosUpload";
 import axiosPrivate from "../../utils/axios/axiosPrivate";
@@ -33,7 +31,7 @@ const mapApiCoachToAppCoach = (apiCoach: any): import("../../types/coach-type").
         email: apiCoach?.email || "",
         avatarUrl: apiCoach?.avatarUrl,
         isVerified: apiCoach?.isVerified ?? false,
-        sports: Array.isArray(apiCoach?.sports) ? apiCoach.sports : [],
+        sports: apiCoach?.sports || '',
         certification: apiCoach?.certification || "",
         hourlyRate: Number(apiCoach?.hourlyRate ?? 0),
         bio: apiCoach?.bio || "",
@@ -88,12 +86,8 @@ const mapApiCoachDetailToAppCoachDetail = (apiCoach: any): import("../../types/c
         level,
         // include sports so frontend can show specialization — simple fallback + normalization
         sports: (() => {
-            const allowed = (Object.values(SPORT_TYPE_CONST) as string[]).map((s) => s.toLowerCase());
-            const raw = apiCoach?.sports ?? apiCoach?.coachingDetails?.sports ?? apiCoach?.profile?.sports ?? apiCoach?.user?.sports ?? [];
-            if (!Array.isArray(raw)) return [] as unknown as SportTypeType[];
-            return raw
-                .map((s: any) => String(s || '').trim().toLowerCase())
-                .filter((v: string) => allowed.includes(v)) as unknown as SportTypeType[];
+            const raw = apiCoach?.sports ?? apiCoach?.coachingDetails?.sports ?? apiCoach?.profile?.sports ?? apiCoach?.user?.sports ?? '';
+            return typeof raw === 'string' ? raw.trim().toLowerCase() : '';
         })(),
         completedSessions: Number(apiCoach?.completedSessions ?? 0),
         createdAt: apiCoach?.createdAt || "",
@@ -248,7 +242,7 @@ export const getPublicCoaches = createAsyncThunk<
             totalReviews: Number(apiCoach?.totalReviews ?? 0),
             price: Number(apiCoach?.price ?? apiCoach?.hourlyRate ?? 0),
             rank: apiCoach?.rank ?? undefined,
-            sports: Array.isArray(apiCoach?.sports) ? apiCoach.sports : [],
+            sports: apiCoach?.sports || '',
         }));
 
         return { success: true, data: mapped, message: raw?.message } as PublicCoachesResponse;

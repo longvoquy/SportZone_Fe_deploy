@@ -2,6 +2,8 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { getSportDisplayNameVN } from "@/components/enums/ENUMS";
+import { getPinColor, getSportWhiteIconPath } from "@/utils/fieldPinIcon";
 
 /**
  * Props cho CoachCard
@@ -14,7 +16,8 @@ import { useNavigate } from "react-router-dom";
  *   rating: 4.8,
  *   reviews: 120,
  *   price: "200.000đ",
- *   nextAvailability: "Thứ 6, 10:00"
+ *   nextAvailability: "Thứ 6, 10:00",
+ *   sports: "badminton"
  * }
  */
 interface CoachCardProps {
@@ -27,6 +30,7 @@ interface CoachCardProps {
     price: string;
     nextAvailability: string;
     avatarUrl?: string;
+    sports?: string;
 }
 
 const CoachCard: React.FC<CoachCardProps> = ({
@@ -39,6 +43,7 @@ const CoachCard: React.FC<CoachCardProps> = ({
     price,
     nextAvailability,
     avatarUrl,
+    sports,
 }) => {
     const navigate = useNavigate();
 
@@ -48,6 +53,9 @@ const CoachCard: React.FC<CoachCardProps> = ({
     const handleCardClick = () => {
         navigate(`/coach-detail/${id}`);
     };
+
+    const sportIconPath = sports ? getSportWhiteIconPath(sports) : null;
+    const sportColor = sports ? getPinColor(sports) : '#6B7280';
 
     return (
         <Card
@@ -73,6 +81,21 @@ const CoachCard: React.FC<CoachCardProps> = ({
                             <span className="text-3xl font-bold text-slate-500">
                                 {name.charAt(0).toUpperCase()}
                             </span>
+                        </div>
+                    )}
+                    {sports && (
+                        <div
+                            className="absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1"
+                            style={{ backgroundColor: sportColor }}
+                        >
+                            {sportIconPath && (
+                                <img
+                                    src={sportIconPath}
+                                    alt={sports}
+                                    className="w-4 h-4"
+                                />
+                            )}
+                            {getSportDisplayNameVN(sports)}
                         </div>
                     )}
                 </div>

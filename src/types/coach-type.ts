@@ -1,17 +1,3 @@
-// Sport Type constants matching API documentation
-export const SportType = {
-    FOOTBALL: 'football',
-    TENNIS: 'tennis',
-    BADMINTON: 'badminton',
-    PICKLEBALL: 'pickleball',
-    BASKETBALL: 'basketball',
-    VOLLEYBALL: 'volleyball',
-    SWIMMING: 'swimming',
-    GYM: 'gym'
-} as const;
-
-export type SportType = typeof SportType[keyof typeof SportType];
-
 // Coach interfaces based on API documentation
 export interface Coach {
     id: string;
@@ -19,7 +5,7 @@ export interface Coach {
     email: string;
     avatarUrl?: string;
     isVerified: boolean;
-    sports: SportType[];
+    sports: string;
     certification: string;
     hourlyRate: number;
     bio: string;
@@ -53,7 +39,7 @@ export interface PublicCoach {
     totalReviews?: number;
     price?: number;
     rank?: string;
-    sports?: SportType[];
+    sports?: string;
 }
 
 export interface PublicCoachesResponse {
@@ -89,7 +75,7 @@ export interface CoachDetail {
     memberSince?: string;
     availableSlots: TimeSlot[];
     price: number;
-    sports?: SportType[];
+    sports?: string;
     coachingDetails: {
         experience: string;
         certification: string;
@@ -107,7 +93,7 @@ export interface TimeSlot {
 // Filter interfaces for coach queries
 export interface CoachFilters {
     name?: string;
-    sportType?: SportType | string;
+    sportType?: string;
     minRate?: number;
     maxRate?: number;
     district?: string; // Filter by district (quận)

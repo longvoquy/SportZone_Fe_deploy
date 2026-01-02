@@ -186,7 +186,7 @@ export default function CoachSelfDetailPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>('all');
   const [editableRank, setEditableRank] = useState<string>("");
-  const [editableSports, setEditableSports] = useState<string[]>([]);
+  const [editableSports, setEditableSports] = useState<string>("");
 
   interface GalleryItemState {
     id: string;
@@ -375,8 +375,8 @@ export default function CoachSelfDetailPage() {
     // Initialize rank and specializations
     const initRank = currentCoach?.level ?? resolvedCoachRaw?.rank ?? "";
     setEditableRank(initRank);
-    const initSpecs = currentCoach?.sports ?? resolvedCoachRaw?.sports ?? [];
-    setEditableSports(Array.isArray(initSpecs) ? initSpecs : []);
+    const initSpecs = currentCoach?.sports ?? resolvedCoachRaw?.sports ?? '';
+    setEditableSports(Array.isArray(initSpecs) ? (initSpecs[0] || '') : (typeof initSpecs === 'string' ? initSpecs : ''));
 
     // Initialize editable location
     const rawLocation = currentCoach?.location || resolvedCoachRaw?.location || "";
@@ -1041,9 +1041,14 @@ export default function CoachSelfDetailPage() {
                                     return CustomFailedToast('Giá tiền phải là số dương hợp lệ');
                                   }
 
+                                  // Validate sports (must not be empty)
+                                  if (!editableSports || editableSports.trim() === '') {
+                                    return CustomFailedToast('Vui lòng chọn môn thể thao');
+                                  }
+
                                   const payload: any = {
                                     bio: editableSummary,
-                                    sports: editableSports,
+                                    sports: editableSports.trim(),
                                     certification,
                                     experience,
                                     rank: editableRank,
@@ -1074,8 +1079,13 @@ export default function CoachSelfDetailPage() {
                                       // refresh data
                                       dispatch(getCoachById(coachId));
                                     } else {
-                                      const errorMsg = action?.payload?.message || 'Lưu thất bại';
-                                      logger.error('Update coach failed', { error: errorMsg, action });
+                                      const errorMsg = action?.payload?.message || action?.error?.message || 'Lưu thất bại';
+                                      logger.error('Update coach failed', { 
+                                        error: errorMsg, 
+                                        action,
+                                        payload,
+                                        fullError: action?.payload 
+                                      });
                                       CustomFailedToast(String(errorMsg));
                                     }
                                   } catch (err) {

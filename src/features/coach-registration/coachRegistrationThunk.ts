@@ -25,7 +25,7 @@ export type CreateCoachRegistrationPayload = {
         expirationDate?: string;
     };
     // Coach profile information
-    sports: string[]; // SportType array
+    sports: string; // Sport type
     certification: string;
     hourlyRate: number;
     bio: string;
@@ -60,7 +60,7 @@ export type CoachRegistrationResponse = {
         expirationDate?: string;
     };
     // Coach profile
-    sports: string[];
+    sports: string;
     certification: string;
     hourlyRate: number;
     bio: string;

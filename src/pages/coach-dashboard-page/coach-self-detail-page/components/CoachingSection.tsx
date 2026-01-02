@@ -18,9 +18,9 @@ interface CoachingSectionProps {
   onCertificationChange?: (value: string) => void;
   onExperienceChange?: (value: string) => void;
   rank?: string;
-  sports?: string[];
+  sports?: string;
   onRankChange?: (value: string) => void;
-  onSportsChange?: (value: string[]) => void;
+  onSportsChange?: (value: string) => void;
 }
 
 export function CoachingSection({
@@ -37,7 +37,7 @@ export function CoachingSection({
   const [cert, setCert] = useState<string>(certification ?? "");
   const [exp, setExp] = useState<string>(experienceText ?? "");
   const [localRank, setLocalRank] = useState<string>(rank ?? "");
-  const [localSports, setLocalSports] = useState<string[]>(sports ?? []);
+  const [localSport, setLocalSport] = useState<string>(sports ?? "");
 
   useEffect(() => {
     setCert(certification ?? "");
@@ -50,7 +50,7 @@ export function CoachingSection({
     setLocalRank(rank ?? "");
   }, [rank]);
   useEffect(() => {
-    setLocalSports(sports ?? []);
+    setLocalSport(sports ?? "");
   }, [sports]);
   return (
     <Card
@@ -123,41 +123,30 @@ export function CoachingSection({
               )}
             </div>
 
-            <div className="flex items-start gap-3">
-              <label className="font-bold text-sm w-36">Sports:</label>
+            <div className="flex items-center gap-3">
+              <label className="font-bold text-sm w-36">Sport:</label>
               {isEditMode ? (
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    'football',
-                    'basketball',
-                    'tennis',
-                    'badminton',
-                    'swimming',
-                    'volleyball',
-                    'pickleball',
-                    'gym',
-                  ].map((s) => {
-                    const checked = localSports.includes(s);
-                    return (
-                      <label key={s} className="inline-flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          value={s}
-                          checked={checked}
-                          onChange={() => {
-                            const next = checked ? localSports.filter(x => x !== s) : [...localSports, s];
-                            setLocalSports(next);
-                            if (typeof onSportsChange === 'function') onSportsChange(next);
-                          }}
-                          className="w-4 h-4"
-                        />
-                        <span className="capitalize">{s}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+                <select
+                  value={localSport}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setLocalSport(v);
+                    if (typeof onSportsChange === 'function') onSportsChange(v);
+                  }}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value="">Select sport</option>
+                  <option value="football">Football</option>
+                  <option value="basketball">Basketball</option>
+                  <option value="tennis">Tennis</option>
+                  <option value="badminton">Badminton</option>
+                  <option value="swimming">Swimming</option>
+                  <option value="volleyball">Volleyball</option>
+                  <option value="pickleball">Pickleball</option>
+                  <option value="gym">Gym</option>
+                </select>
               ) : (
-                <span className="text-sm">{(sports && sports.length) ? sports.join(', ') : '-'}</span>
+                <span className="text-sm capitalize">{sports || '-'}</span>
               )}
             </div>
           </div>
