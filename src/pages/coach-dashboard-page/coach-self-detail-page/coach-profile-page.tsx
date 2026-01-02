@@ -33,7 +33,7 @@ import {
   Award,
   Calendar,
   CheckCircle2,
-  Clock,
+  // Clock,
   //   ChevronUp,
 } from "lucide-react";
 import { getCoachById, clearCurrentCoach, updateCoach, uploadCoachGalleryImages } from "@/features/coach";
@@ -42,6 +42,7 @@ import type { RootState, AppDispatch } from "@/store/store";
 import { CoachDashboardLayout } from "@/components/layouts/coach-dashboard-layout";
 import { Loading } from "@/components/ui/loading";
 import { BioSection } from "./components/BioSection";
+import { CoachingSection } from "./components/CoachingSection";
 import { GallerySection } from "./components/GallerySection";
 import { LocationSection } from "./components/LocationSection";
 import { ReviewsSection } from "../../coach-detail-page/components/ReviewsSection";
@@ -352,7 +353,9 @@ export default function CoachSelfDetailPage() {
         ? resolvedCoachRaw.hourlyRate
         : undefined;
 
-    setIsCoachActive(true);
+    // Initialize isCoachActive from API response
+    const coachActiveStatus = currentCoach?.isCoachActive ?? resolvedCoachRaw?.isCoachActive ?? true;
+    setIsCoachActive(coachActiveStatus);
     setEditablePrice(typeof priceNum === "number" ? priceNum : "-");
 
     // Initialize editable short bio summary
@@ -415,6 +418,7 @@ export default function CoachSelfDetailPage() {
     const handleScroll = () => {
       const sections = [
         "bio",
+        "coaching",
         "gallery",
         "location",
       ];
@@ -767,6 +771,7 @@ export default function CoachSelfDetailPage() {
 
   const tabs = [
     { id: "bio", label: "Giới thiệu" },
+    { id: "coaching", label: "Huấn luyện" },
     { id: "gallery", label: "Thư viện ảnh" },
     { id: "location", label: "Vị trí" },
   ];
@@ -1044,7 +1049,7 @@ export default function CoachSelfDetailPage() {
                                     rank: editableRank,
                                     galleryImages: finalGalleryImages,
                                     hourlyRate: hourlyRateValue,
-                                    isActive: isCoachActive,
+                                    isCoachActive: isCoachActive,
                                   };
 
                                   // 3. Save Both
@@ -1171,6 +1176,29 @@ export default function CoachSelfDetailPage() {
                 onSummaryChange={(val) => { setEditableSummary(val); setIsDirty(true); }}
               />
 
+              {/* Phần: Huấn luyện */}
+              <CoachingSection
+                coachingSummary={editableCoachingSummary}
+                isEditMode={isEditMode}
+                onCoachingSummaryChange={(val) => { setEditableCoachingSummary(val); setIsDirty(true); }}
+                certification={currentCoach?.coachingDetails?.certification ?? resolvedCoachRaw?.coachingDetails?.certification ?? resolvedCoachRaw?.certification ?? ""}
+                experienceText={currentCoach?.coachingDetails?.experience ?? resolvedCoachRaw?.coachingDetails?.experience ?? resolvedCoachRaw?.experience ?? ""}
+                onCertificationChange={(val) => { 
+                  const exp = currentCoach?.coachingDetails?.experience ?? resolvedCoachRaw?.coachingDetails?.experience ?? resolvedCoachRaw?.experience ?? "";
+                  setEditableCoachingSummary(exp && val ? `${exp} — ${val}` : exp || val);
+                  setIsDirty(true);
+                }}
+                onExperienceChange={(val) => { 
+                  const cert = currentCoach?.coachingDetails?.certification ?? resolvedCoachRaw?.coachingDetails?.certification ?? resolvedCoachRaw?.certification ?? "";
+                  setEditableCoachingSummary(val && cert ? `${val} — ${cert}` : val || cert);
+                  setIsDirty(true);
+                }}
+                rank={editableRank}
+                sports={editableSports}
+                onRankChange={(val) => { setEditableRank(val); setIsDirty(true); }}
+                onSportsChange={(val) => { setEditableSports(val); setIsDirty(true); }}
+              />
+
               {/* Phần: Thư viện ảnh */}
               <GallerySection
                 images={galleryImages}
@@ -1289,7 +1317,7 @@ export default function CoachSelfDetailPage() {
               </Card>
 
               {/* Lịch trống tiếp theo */}
-              <Card id="next-availability" className="shadow-md hover:shadow-lg transition-shadow duration-300">
+              {/* <Card id="next-availability" className="shadow-md hover:shadow-lg transition-shadow duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Clock className="h-5 w-5 text-green-600" />
@@ -1334,7 +1362,7 @@ export default function CoachSelfDetailPage() {
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Danh sách bởi chủ sở hữu */}
               {/* <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">

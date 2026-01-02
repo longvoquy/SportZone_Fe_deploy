@@ -39,6 +39,7 @@ const mapApiCoachToAppCoach = (apiCoach: any): import("../../types/coach-type").
         bio: apiCoach?.bio || "",
         rating: Number(apiCoach?.rating ?? 0),
         totalReviews: Number(apiCoach?.totalReviews ?? 0),
+        isCoachActive: apiCoach?.isCoachActive ?? true,
     };
 };
 
@@ -103,6 +104,7 @@ const mapApiCoachDetailToAppCoachDetail = (apiCoach: any): import("../../types/c
             experience,
             certification,
         },
+        isCoachActive: apiCoach?.isCoachActive ?? true,
     };
 };
 

@@ -28,6 +28,7 @@ export interface Coach {
     location?: string; // Coach location for filtering
     rank?: string;
     experience?: string;
+    isCoachActive?: boolean;
 }
 
 // Legacy Coach interface for /coaches/all endpoint
@@ -93,6 +94,7 @@ export interface CoachDetail {
         experience: string;
         certification: string;
     };
+    isCoachActive?: boolean;
 }
 
 export interface TimeSlot {
@@ -164,6 +166,7 @@ export interface CoachProfile {
     experience: string;
     location: string;
     rank: string;
+    isCoachActive?: boolean;
 }
 
 export interface CoachProfileResponse {
