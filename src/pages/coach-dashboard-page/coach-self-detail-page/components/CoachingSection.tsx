@@ -116,7 +116,7 @@ export function CoachingSection({
                   <option value="novice">Novice</option>
                   <option value="intermediate">Intermediate</option>
                   <option value="advanced">Advanced</option>
-                  <option value="pro">Pro</option>
+                  <option value="expert">Expert</option>
                 </select>
               ) : (
                 <span className="text-sm">{rank ?? "-"}</span>

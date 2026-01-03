@@ -9,7 +9,7 @@ import { getFieldById } from "@/features/field/fieldThunk"
 import { NavbarDarkComponent } from "@/components/header/navbar-dark-component"
 import { FooterComponent } from "@/components/footer/footer-component"
 import { PageWrapper } from "@/components/layouts/page-wrapper"
-import { ChevronLeft, ChevronRight, MapPin, Share2, Star, CalendarDays, AlertCircle, MessageCircle, Sparkles, Bot } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Share2, Star, CalendarDays, AlertCircle, MessageCircle, Sparkles, Bot, Bookmark } from "lucide-react"
 import L from "leaflet"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Loading } from "@/components/ui/loading"
@@ -571,12 +571,12 @@ const FieldDetailPage: React.FC = () => {
                     onClick={toggleBookmark}
                     disabled={favLoading}
                     className={`inline-flex items-center gap-2 text-sm ${isBookmark
-                      ? "text-red-600 hover:text-red-800"
+                      ? "text-green-600 hover:text-green-800"
                       : "text-gray-600 hover:text-gray-900"
                       }`}
                   >
-                    <Star
-                      className={`h-4 w-4 ${isBookmark ? "text-red-500" : "text-yellow-500"
+                    <Bookmark
+                      className={`h-4 w-4 ${isBookmark ? "fill-green-600 text-green-600" : "text-gray-600"
                         }`}
                     />
                     <span>

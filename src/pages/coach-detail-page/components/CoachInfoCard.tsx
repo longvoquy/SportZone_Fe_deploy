@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Award, Calendar, CheckCircle2, Heart, Mail } from "lucide-react";
+import { MapPin, Star, Award, Calendar, CheckCircle2, Bookmark, Mail } from "lucide-react";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
@@ -94,9 +94,9 @@ export const CoachInfoCard: React.FC<CoachInfoCardProps> = ({
                       size="sm"
                       onClick={onToggleBookmark}
                       disabled={favLoading}
-                      className={`${isBookmark ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'} text-white border-0 flex items-center gap-2`}
+                      className={`${isBookmark ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} ${isBookmark ? 'text-white' : ''} border-0 flex items-center gap-2`}
                     >
-                      <Heart className="h-4 w-4" />
+                      <Bookmark className={`h-4 w-4 ${isBookmark ? 'fill-white' : ''}`} />
                       {favLoading ? 'Đang xử lý...' : isBookmark ? 'Đã bookmark' : 'Bookmark'}
                     </Button>
                   </div>

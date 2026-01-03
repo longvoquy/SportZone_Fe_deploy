@@ -215,16 +215,16 @@ export const getAllCoaches = createAsyncThunk<
     }
 });
 
-// Get public coaches, optional sports filter (array of SportType)
+// Get public coaches, optional sports filter (single sport string)
 export const getPublicCoaches = createAsyncThunk<
     PublicCoachesResponse,
-    { sports?: string[] } | undefined,
+    { sports?: string } | undefined,
     { rejectValue: ErrorResponse }
 >("coach/getPublicCoaches", async (payload = {}, thunkAPI) => {
     try {
         const sports = payload?.sports;
         const params = new URLSearchParams();
-        if (sports && sports.length > 0) params.append('sports', sports.join(','));
+        if (sports && sports.trim()) params.append('sports', sports);
 
         const url = params.toString() ? `${COACHES_PUBLIC_API}?${params.toString()}` : COACHES_PUBLIC_API;
         const response = await axiosPublic.get(url);
@@ -236,6 +236,7 @@ export const getPublicCoaches = createAsyncThunk<
         const mapped = apiList.map((apiCoach: any) => ({
             id: apiCoach?.id || apiCoach?._id || "",
             name: apiCoach?.name || apiCoach?.fullName || "",
+            avatar: apiCoach?.avatar || apiCoach?.avatarUrl || undefined,
             location: apiCoach?.location || "",
             description: apiCoach?.description || apiCoach?.bio || undefined,
             rating: Number(apiCoach?.rating ?? 0),

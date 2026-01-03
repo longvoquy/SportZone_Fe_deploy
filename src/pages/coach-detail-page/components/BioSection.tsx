@@ -1,14 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getSportDisplayNameVN } from "@/components/enums/ENUMS";
 
 interface BioSectionProps {
   coachData: any;
 }
 
 export const BioSection: React.FC<BioSectionProps> = ({ coachData }) => {
-  const rawSports = coachData?.sports ?? coachData?.coachingDetails?.sports ?? [];
+  const rawSports = coachData?.sports ?? coachData?.coachingDetails?.sports ?? '';
   const sportsList: string[] = Array.isArray(rawSports)
     ? rawSports.map((s: any) => (typeof s === 'string' ? s : s?.label ?? s?.name ?? String(s)))
+    : typeof rawSports === 'string' && rawSports.trim()
+    ? rawSports.split(',').map((s: string) => s.trim()).filter(Boolean)
     : [];
   return (
     <Card
@@ -35,7 +38,7 @@ export const BioSection: React.FC<BioSectionProps> = ({ coachData }) => {
               <span className="inline-flex flex-wrap gap-2">
                 {sportsList.map((s) => (
                   <span key={s} className="px-2 py-1 bg-muted rounded-full text-sm">
-                    {s}
+                    {getSportDisplayNameVN(s)}  
                   </span>
                 ))}
               </span>

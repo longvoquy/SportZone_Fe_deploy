@@ -6,6 +6,23 @@ import { getSportDisplayNameVN } from "@/components/enums/ENUMS";
 import { getPinColor, getSportWhiteIconPath } from "@/utils/fieldPinIcon";
 
 /**
+ * Get badge color for each sport type
+ */
+const getSportBadgeColor = (sport: string): string => {
+    const colors: { [key: string]: string } = {
+        'football': 'bg-blue-500',
+        'tennis': 'bg-green-500',
+        'badminton': 'bg-purple-500',
+        'pickleball': 'bg-orange-500',
+        'basketball': 'bg-red-500',
+        'volleyball': 'bg-yellow-500',
+        'swimming': 'bg-cyan-500',
+        'gym': 'bg-gray-600',
+    };
+    return colors[sport.toLowerCase()] || 'bg-gray-500';
+};
+
+/**
  * Props cho CoachCard
  * @example
  * {
@@ -83,27 +100,31 @@ const CoachCard: React.FC<CoachCardProps> = ({
                             </span>
                         </div>
                     )}
-                    {sports && (
-                        <div
-                            className="absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1"
-                            style={{ backgroundColor: sportColor }}
-                        >
-                            {sportIconPath && (
-                                <img
-                                    src={sportIconPath}
-                                    alt={sports}
-                                    className="w-4 h-4"
-                                />
-                            )}
-                            {getSportDisplayNameVN(sports)}
-                        </div>
-                    )}
                 </div>
                 {/* Content section */}
                 <CardContent className="p-4 flex-1">
                     <div className="flex items-start justify-between mb-2">
-                        <div>
-                            <h3 className="text-xl font-bold mb-1">{name}</h3>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                                <h3 className="text-xl font-bold">{name}</h3>
+                                {sports && sports.trim() && (
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                        {sports.split(',').map((sport, index) => {
+                                            const trimmedSport = sport.trim();
+                                            if (!trimmedSport) return null;
+                                            const badgeColor = getSportBadgeColor(trimmedSport);
+                                            return (
+                                                <span
+                                                    key={index}
+                                                    className={`${badgeColor} text-white text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap`}
+                                                >
+                                                    Dạy môn: {getSportDisplayNameVN(trimmedSport)}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                             <p className="text-gray-600 text-sm mb-1">{location}</p>
                         </div>
                         <div className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">{price}

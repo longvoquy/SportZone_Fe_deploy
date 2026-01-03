@@ -7,6 +7,7 @@ import { MapPin, Star, Calendar, Eye } from "lucide-react";
 interface SimilarCoach {
   id?: string;
   name: string;
+  avatar?: string;
   sport: string;
   location: string;
   rating: number;
@@ -52,6 +53,7 @@ export const SimilarCoachesSection: React.FC<SimilarCoachesSectionProps> = ({
               <div className="relative aspect-4/3 overflow-hidden">
                 <img
                   src={
+                    coach.avatar ||
                     coach.image ||
                     "/placeholder.svg?height=400&width=320&query=professional coach portrait"
                   }
@@ -64,13 +66,13 @@ export const SimilarCoachesSection: React.FC<SimilarCoachesSectionProps> = ({
                   <Badge className="bg-cyan-500 hover:bg-cyan-600 text-white border-0 font-semibold">
                     {coach.featured ? "Professional" : "Rookie"}
                   </Badge>
-                  <Button
+                  {/* <Button
                     size="icon"
                     variant="secondary"
                     className="rounded-full bg-white/90 hover:bg-white hover:text-red-500 transition-colors h-9 w-9"
                   >
-                    {/* <Heart className="h-4 w-4" /> */}
-                  </Button>
+                    <Heart className="h-4 w-4" />
+                  </Button> */}
                 </div>
 
                 {/* Nhãn giá ở dưới */}

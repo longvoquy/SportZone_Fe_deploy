@@ -33,6 +33,7 @@ export interface LegacyCoach {
 export interface PublicCoach {
     id: string;
     name: string;
+    avatar?: string;
     location: string;
     description?: string;
     rating?: number;

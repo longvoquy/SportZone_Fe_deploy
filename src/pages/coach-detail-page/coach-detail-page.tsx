@@ -351,51 +351,6 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
   //     },
   //   ];
 
-  const similarCoaches = [
-    {
-      id: 'sample-kevin',
-      name: "Kevin Anderson",
-      sport: "basketball,badminton",
-      location: "Los Angeles, CA",
-      rating: 4.9,
-      reviews: 89,
-      sessions: 156,
-      availability: "Fri, Sept 2023",
-      price: 180,
-      image: "/male-tennis-coach.png",
-      featured: true,
-      color: "bg-pink-100",
-    },
-    {
-      id: 'sample-angela',
-      name: "Angela Rodriguez",
-      sport: "basketball,badminton",
-      location: "Chicago, IL",
-      rating: 4.8,
-      reviews: 124,
-      sessions: 203,
-      availability: "Fri, Sept 2023",
-      price: 220,
-      image: "/female-basketball-coach.png",
-      featured: false,
-      color: "bg-orange-100",
-    },
-    {
-      id: 'sample-evan',
-      name: "Evan Roddick",
-      sport: "basketball,badminton",
-      location: "Miami, FL",
-      rating: 4.7,
-      reviews: 67,
-      sessions: 134,
-      availability: "Sat, Sept 2023",
-      price: 195,
-      image: "/male-soccer-coach.png",
-      featured: true,
-      color: "bg-blue-100",
-    },
-  ];
-
   const [similarCoachesState, setSimilarCoachesState] = useState<any[]>([]);
 
   // Fetch public coaches similar to this coach (by sports) and map to UI shape
@@ -403,27 +358,37 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
     let mounted = true;
     const fetchSimilar = async () => {
       try {
-        const sports = Array.isArray(currentCoach?.sports) ? (currentCoach!.sports as string[]) : [];
-        const action: any = await dispatch(getPublicCoaches({ sports }));
+        const sportsString = currentCoach?.sports || '';
+        const sportsArray = typeof sportsString === 'string' && sportsString.trim()
+          ? sportsString.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : [];
+        const firstSport = sportsArray.length > 0 ? sportsArray[0] : '';
+        const action: any = await dispatch(getPublicCoaches({ sports: firstSport }));
         if (action?.meta?.requestStatus === "fulfilled") {
           const items = action.payload?.data ?? [];
           const mapped = (items as any[])
             .filter((c) => (c?.id || "") !== (currentCoach?.id || ""))
             .slice(0, 3)
-            .map((c) => ({
-              id: c.id || c._id || "",
-              name: c.name || c.fullName || "HLV",
-              sport: Array.isArray(c.sports) && c.sports.length ? (c.sports as string[]).join(',') : (c.sport || "Coach"),
-              location: c.location || "",
-              rating: Number(c.rating ?? 0),
-              reviews: Number(c.totalReviews ?? 0),
-              sessions: Number(c.completedSessions ?? 0),
-              availability: c.nextAvailability ?? "",
-              price: Number(c.price ?? c.hourlyRate ?? 0),
-              image: c.avatarUrl || c.profileImage || `/placeholder.svg?height=400&width=320&query=${encodeURIComponent(Array.isArray(c.sports) && c.sports[0] ? c.sports[0] : 'coach')}`,
-              featured: (String(c.rank || c.level || '').toLowerCase() === 'professional') || Number(c.rating ?? 0) >= 4.8,
-              color: 'bg-green-100',
-            }));
+            .map((c) => {
+              const cSportsStr = typeof c.sports === 'string' ? c.sports : '';
+              const cSportsArr = cSportsStr.trim() ? cSportsStr.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
+              const firstCoachSport = cSportsArr.length > 0 ? cSportsArr[0] : 'coach';
+              return {
+                id: c.id || c._id || "",
+                name: c.name || c.fullName || "HLV",
+                avatar: c.avatar || c.avatarUrl || c.profileImage || undefined,
+                sport: cSportsStr || (c.sport || "Coach"),
+                location: c.location || "",
+                rating: Number(c.rating ?? 0),
+                reviews: Number(c.totalReviews ?? 0),
+                sessions: Number(c.completedSessions ?? 0),
+                availability: c.nextAvailability ?? "",
+                price: Number(c.price ?? c.hourlyRate ?? 0),
+                image: c.avatarUrl || c.profileImage || `/placeholder.svg?height=400&width=320&query=${encodeURIComponent(firstCoachSport)}`,
+                featured: (String(c.rank || c.level || '').toLowerCase() === 'professional') || Number(c.rating ?? 0) >= 4.8,
+                color: 'bg-green-100',
+              };
+            });
 
           if (mounted) setSimilarCoachesState(mapped);
         }
@@ -564,7 +529,9 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
           </div>
         </div>
 
-        <SimilarCoachesSection coaches={similarCoachesState.length ? similarCoachesState : similarCoaches} />
+        {similarCoachesState.length > 0 && (
+          <SimilarCoachesSection coaches={similarCoachesState} />
+        )}
 
         {/* Modals */}
         <ReviewModal
