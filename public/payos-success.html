@@ -60,16 +60,85 @@
     </div>
 
     <script>
-        // Auto close window after 1.5 seconds
-        setTimeout(() => {
-            window.close();
-            
-            // If window.close() doesn't work (some browsers block it),
-            // try redirecting to a blank page
-            if (!window.closed) {
-                window.location.href = 'about:blank';
+        // ✅ CRITICAL: Verify payment with backend when page loads
+        (async function() {
+            try {
+                // Extract orderCode from URL query params
+                const urlParams = new URLSearchParams(window.location.search);
+                const orderCode = urlParams.get('orderCode');
+                const status = urlParams.get('status');
+                
+                if (orderCode) {
+                    console.log('[PayOS Success] Verifying payment with backend, orderCode:', orderCode);
+                    
+                    // ✅ Detect backend URL: try to replace frontend port with backend port
+                    // Default: localhost:5173 -> localhost:3000, or use same host with port 3000
+                    let backendHost = window.location.host;
+                    if (backendHost.includes(':5173')) {
+                        backendHost = backendHost.replace(':5173', ':3000');
+                    } else if (!backendHost.includes(':')) {
+                        // If no port, assume we need to add :3000
+                        backendHost = backendHost + ':3000';
+                    }
+                    
+                    const backendUrl = `${window.location.protocol}//${backendHost}/transactions/payos/return?orderCode=${orderCode}${status ? '&status=' + status : ''}`;
+                    console.log('[PayOS Success] Calling backend URL:', backendUrl);
+                    
+                    try {
+                        const response = await fetch(backendUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Backend returned status ${response.status}`);
+                        }
+                        
+                        const result = await response.json();
+                        console.log('[PayOS Success] Backend verification result:', result);
+                        
+                        if (result.success && result.paymentStatus === 'succeeded') {
+                            console.log('[PayOS Success] ✅ Payment verified successfully, booking should be updated');
+                            
+                            // Notify parent window if exists (for popup scenario)
+                            if (window.opener) {
+                                window.opener.postMessage({
+                                    type: 'PAYOS_PAYMENT_SUCCESS',
+                                    orderCode: orderCode,
+                                    bookingId: result.bookingId,
+                                    amount: result.amount
+                                }, '*');
+                            }
+                        } else {
+                            console.warn('[PayOS Success] ⚠️ Payment verification returned:', result);
+                        }
+                    } catch (fetchError) {
+                        console.error('[PayOS Success] ❌ Error calling backend:', fetchError);
+                        console.error('[PayOS Success] This might be normal if PayOS webhook already processed the payment');
+                        // Still close window even if backend call fails
+                        // PayOS webhook should handle it if this fails
+                    }
+                } else {
+                    console.warn('[PayOS Success] ⚠️ No orderCode in URL, skipping backend verification');
+                    console.warn('[PayOS Success] PayOS webhook should still process the payment');
+                }
+            } catch (error) {
+                console.error('[PayOS Success] ❌ Error in verification script:', error);
             }
-        }, 1500);
+            
+            // Auto close window after 2 seconds (give time for backend call)
+            setTimeout(() => {
+                window.close();
+                
+                // If window.close() doesn't work (some browsers block it),
+                // try redirecting to a blank page
+                if (!window.closed) {
+                    window.location.href = 'about:blank';
+                }
+            }, 2000);
+        })();
     </script>
 </body>
 </html>

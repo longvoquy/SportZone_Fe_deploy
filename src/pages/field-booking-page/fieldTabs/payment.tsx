@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import logger from "@/utils/logger";
-import { createPayOSPayment } from "@/features/booking/bookingThunk";
+import { createPayOSPayment, createConsecutiveDaysBooking, createWeeklyRecurringBooking } from "@/features/booking/bookingThunk";
 import { useSocket } from "@/hooks/useSocket";
 
 // Helper function for formatting VND
@@ -43,6 +43,8 @@ interface PaymentV2Props {
     onCountdownExpired?: () => void; // Callback khi countdown háº¿t
     amenities?: Array<{ id: string; name: string; price: number }>;
     selectedAmenityIds?: string[];
+    aiBookingPayload?: any; // NEW: For deferred AI booking creation
+    aiBookingType?: 'consecutive' | 'weekly' | null; // NEW: Type of AI booking
 }
 
 /**
@@ -55,6 +57,8 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
     onCountdownExpired,
     amenities = [],
     selectedAmenityIds = [],
+    aiBookingPayload,
+    aiBookingType,
 }) => {
     const location = useLocation();
     const dispatch = useAppDispatch();
@@ -73,6 +77,11 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [payosWindow, setPayosWindow] = useState<Window | null>(null);
     const [pollAttempts, setPollAttempts] = useState(0);
+
+    // AI Booking deferred creation state
+    const [isCreatingAiBooking, setIsCreatingAiBooking] = useState(false);
+    const [aiBookingCreated, setAiBookingCreated] = useState(false);
+    const [createdBookingIds, setCreatedBookingIds] = useState<string[]>([]);
 
     // WebSocket connection for real-time notifications (reads userId from cookie internally)
     const socket = useSocket('notifications');
@@ -231,6 +240,80 @@ export const PaymentV2: React.FC<PaymentV2Props> = ({
             setHoldError('Lỗi khi khôi phục thông tin booking. Vui lòng quay lại bước trước.');
         }
     }, []);
+
+    // ============================================================================
+    // AI BOOKING DEFERRED CREATION
+    // Create booking on mount when aiBookingPayload exists (validated but not created)
+    // ============================================================================
+    useEffect(() => {
+        // Skip if no AI booking payload or already processed
+        if (!aiBookingPayload || !aiBookingType || aiBookingCreated || isCreatingAiBooking) {
+            return;
+        }
+
+        // Skip if we already have a held booking (fallback for normal flow)
+        if (heldBookingId) {
+            logger.debug('[PAYMENT V2] Already have heldBookingId, skipping AI booking creation');
+            return;
+        }
+
+        const createAiBooking = async () => {
+            setIsCreatingAiBooking(true);
+            setHoldError(null);
+
+            try {
+                logger.debug('[PAYMENT V2] Creating AI booking:', { type: aiBookingType, payload: aiBookingPayload });
+
+                let result;
+                if (aiBookingType === 'consecutive') {
+                    result = await dispatch(createConsecutiveDaysBooking(aiBookingPayload)).unwrap();
+                } else if (aiBookingType === 'weekly') {
+                    result = await dispatch(createWeeklyRecurringBooking(aiBookingPayload)).unwrap();
+                } else {
+                    throw new Error('Unknown booking type');
+                }
+
+                logger.log('[PAYMENT V2] AI booking created successfully:', result);
+
+                // Extract booking IDs for payment
+                const bookingIds: string[] = result.bookings?.map((b: any) => b._id || b.id) || [];
+                setCreatedBookingIds(bookingIds);
+
+                // Use the first booking ID for payment (or consider batch payment later)
+                if (bookingIds.length > 0) {
+                    const primaryBookingId = bookingIds[0];
+                    setHeldBookingId(primaryBookingId);
+                    setCountdown(300); // Reset countdown to 5 minutes
+
+                    // Store in sessionStorage for page refresh handling
+                    sessionStorage.setItem('heldBookingId', primaryBookingId);
+                    sessionStorage.setItem('heldBookingTime', Date.now().toString());
+                    sessionStorage.setItem('aiBookingIds', JSON.stringify(bookingIds));
+
+                    setAiBookingCreated(true);
+                    toast.success(`Đã tạo ${bookingIds.length} booking thành công!`);
+                } else {
+                    throw new Error('Không có booking nào được tạo');
+                }
+            } catch (error: any) {
+                logger.error('[PAYMENT V2] Error creating AI booking:', error);
+
+                // Check for conflicts (race condition - slot was booked by someone else)
+                if (error.conflicts && error.conflicts.length > 0) {
+                    const conflictDates = error.conflicts.map((c: any) => c.date).join(', ');
+                    setHoldError(`Có xung đột với các ngày: ${conflictDates}. Vui lòng quay lại và chọn lại.`);
+                    toast.error('Có xung đột khi tạo booking. Một số slot đã được đặt bởi người khác.');
+                } else {
+                    setHoldError(error.message || 'Không thể tạo booking. Vui lòng thử lại.');
+                    toast.error(error.message || 'Lỗi khi tạo booking');
+                }
+            } finally {
+                setIsCreatingAiBooking(false);
+            }
+        };
+
+        createAiBooking();
+    }, [aiBookingPayload, aiBookingType, aiBookingCreated, isCreatingAiBooking, heldBookingId, dispatch]);
 
     // Booking hold is now created in PersonalInfo step, so we skip this useEffect
     // PaymentV2 only reads the existing hold from sessionStorage (see useEffect above)

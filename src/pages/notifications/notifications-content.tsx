@@ -8,6 +8,8 @@ import axiosPublic from "@/utils/axios/axiosPublic";
 import { formatDistanceToNow, isValid, subHours } from "date-fns";
 import { vi } from "date-fns/locale";
 
+import { useAppSelector } from "@/store/hook";
+
 interface Notification {
     _id: string;
     title: string;
@@ -17,6 +19,7 @@ interface Notification {
 }
 
 export default function NotificationsContent() {
+    const { user } = useAppSelector((state) => state.auth);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [markingAll, setMarkingAll] = useState(false);
@@ -27,12 +30,12 @@ export default function NotificationsContent() {
 
     useEffect(() => {
         const fetchNotifications = async () => {
-            const storedUser = sessionStorage.getItem("user");
-            if (!storedUser) return;
-
-            const user = JSON.parse(storedUser);
             const userId = user?._id;
-            if (!userId) return;
+
+            if (!userId) {
+                setLoading(false);
+                return;
+            }
 
             try {
                 const res = await axiosPublic.get(`/notifications/user/${userId}`);
@@ -45,7 +48,7 @@ export default function NotificationsContent() {
         };
 
         fetchNotifications();
-    }, []);
+    }, [user]);
 
     const formatNotificationTime = (createdAt?: string) => {
         if (!createdAt) return "Không rõ thời gian";

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import type { Field } from "@/types/field-type";
 import axiosPrivate from "@/utils/axios/axiosPrivate";
 import { Loading } from "@/components/ui/loading";
 import logger from "@/utils/logger";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 /**
  * Interface for booking form data
@@ -142,8 +143,9 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
 
     const [isHoldingSlot, setIsHoldingSlot] = useState(false);
     const [holdError, setHoldError] = useState<string | null>(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-    const handleSubmit = async () => {
+    const handleSubmitClick = () => {
         if (!validateForm()) {
             return;
         }
@@ -156,12 +158,18 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             return;
         }
 
-        // Call booking hold API before moving to payment
+        // Validate booking info before showing confirmation modal
         if (!venue?.id || !formData.date || !formData.startTime || !formData.endTime || !formData.courtId) {
             setHoldError('Thiếu thông tin đặt sân (court, ngày, giờ). Vui lòng quay lại và kiểm tra.');
             return;
         }
 
+        // Show confirmation modal
+        setShowConfirmModal(true);
+    };
+
+    const handleConfirmBooking = async () => {
+        setShowConfirmModal(false);
         setIsHoldingSlot(true);
         setHoldError(null);
 
@@ -348,12 +356,13 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
                     variant="outline"
                     onClick={onBack}
                     className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-700"
+                    disabled={isHoldingSlot}
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Quay lại
                 </Button>
                 <Button
-                    onClick={handleSubmit}
+                    onClick={handleSubmitClick}
                     className="px-5 py-3 bg-gray-800 hover:bg-gray-900 text-white"
                     disabled={!formData.name || !formData.email || !formData.phone || isHoldingSlot}
                 >
@@ -370,6 +379,63 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
                     )}
                 </Button>
             </div>
+
+            {/* Confirmation Modal */}
+            <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-gray-900">
+                            <AlertCircle className="h-5 w-5 text-emerald-600" />
+                            Xác nhận đặt sân
+                        </DialogTitle>
+                        <DialogDescription className="text-gray-600 mt-2">
+                            Bạn có chắc chắn muốn tiếp tục đặt sân? Chỗ đặt sẽ được giữ trong 5 phút để bạn hoàn tất thanh toán.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2 text-sm text-gray-700">
+                        <div className="flex justify-between">
+                            <span className="font-medium">Sân:</span>
+                            <span>{venue?.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="font-medium">Sân con:</span>
+                            <span>{formData.courtName || 'Chưa chọn'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="font-medium">Ngày:</span>
+                            <span>{formData.date ? new Date(formData.date).toLocaleDateString('vi-VN') : '---'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="font-medium">Thời gian:</span>
+                            <span>{formData.startTime && formData.endTime ? `${formData.startTime} - ${formData.endTime}` : '---'}</span>
+                        </div>
+                    </div>
+                    <DialogFooter className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowConfirmModal(false)}
+                            disabled={isHoldingSlot}
+                            className="flex-1"
+                        >
+                            Hủy
+                        </Button>
+                        <Button
+                            onClick={handleConfirmBooking}
+                            disabled={isHoldingSlot}
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                            {isHoldingSlot ? (
+                                <>
+                                    <Loading size={16} className="mr-2 border-white" />
+                                    Đang xử lý...
+                                </>
+                            ) : (
+                                'Xác nhận'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

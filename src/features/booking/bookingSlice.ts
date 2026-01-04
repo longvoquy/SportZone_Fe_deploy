@@ -1,7 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { BookingState, ErrorResponse } from "../../types/booking-type";
 import {
-    createFieldBooking,
     createConsecutiveDaysBooking,
     createWeeklyRecurringBooking,
     parseBookingRequest,
@@ -60,14 +59,6 @@ const bookingSlice = createSlice({
         },
     },
     extraReducers: (builder) => {
-        // Create Field Booking
-        builder
-            .addCase(createFieldBooking.fulfilled, (state, action) => {
-                state.loadingBookings = false;
-                state.currentBooking = action.payload;
-                state.bookings.push(action.payload);
-            })
-
         // Create Consecutive Days Booking (Turn 1)
         builder
             .addCase(createConsecutiveDaysBooking.fulfilled, (state, action) => {
@@ -227,7 +218,6 @@ const bookingSlice = createSlice({
                     action.type.startsWith("booking/") &&
                     action.type.endsWith("/pending") &&
                     [
-                        createFieldBooking.typePrefix,
                         createConsecutiveDaysBooking.typePrefix,
                         createWeeklyRecurringBooking.typePrefix,
                         cancelFieldBooking.typePrefix,

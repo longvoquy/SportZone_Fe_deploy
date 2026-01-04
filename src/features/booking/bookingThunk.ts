@@ -2,7 +2,6 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type {
     Booking,
     SessionBookingResponse,
-    CreateFieldBookingPayload,
     CreateConsecutiveDaysBookingPayload,
     CreateWeeklyRecurringPayload,
     CreateSessionBookingPayload,
@@ -19,9 +18,10 @@ import type {
 import axiosPrivate from "../../utils/axios/axiosPrivate";
 import logger from "../../utils/logger";
 import {
-    CREATE_FIELD_BOOKING_API,
     CREATE_CONSECUTIVE_DAYS_BOOKING_API,
     CREATE_WEEKLY_RECURRING_BOOKING_API,
+    VALIDATE_CONSECUTIVE_DAYS_BOOKING_API,
+    VALIDATE_WEEKLY_RECURRING_BOOKING_API,
     PARSE_BOOKING_REQUEST_API,
     CANCEL_FIELD_BOOKING_API,
     CREATE_SESSION_BOOKING_API,
@@ -32,6 +32,7 @@ import {
     SET_COACH_HOLIDAY_API,
     CREATE_COMBINED_BOOKING_API,
     CREATE_PAYOS_PAYMENT_API,
+    CREATE_PAYOS_PAYMENT_RECURRING_API,
 } from "./bookingAPI";
 
 /**
@@ -88,29 +89,7 @@ export const getMyInvoices = createAsyncThunk<
     }
 });
 
-/**
- * Create field booking
- */
-export const createFieldBooking = createAsyncThunk<
-    Booking,
-    CreateFieldBookingPayload,
-    { rejectValue: ErrorResponse }
->("booking/createFieldBooking", async (payload, thunkAPI) => {
-    try {
 
-        const response = await axiosPrivate.post(CREATE_FIELD_BOOKING_API, payload);
-
-
-        return response.data;
-    } catch (error: any) {
-        logger.error("Error creating field booking:", error);
-        const errorResponse: ErrorResponse = {
-            message: error.response?.data?.message || error.message || "Failed to create field booking",
-            status: error.response?.status?.toString() || "500",
-        };
-        return thunkAPI.rejectWithValue(errorResponse);
-    }
-});
 
 /**
  * Create consecutive days booking (Turn 1 - Recurring Booking Feature)
@@ -152,6 +131,54 @@ export const createWeeklyRecurringBooking = createAsyncThunk<
         logger.error("Error creating weekly recurring booking:", error);
         const errorResponse = {
             message: error.response?.data?.message || error.message || "Failed to create weekly recurring booking",
+            status: error.response?.status?.toString() || "500",
+            conflicts: error.response?.data?.conflicts || undefined,
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+// ============================================================================
+// VALIDATION THUNKS (Dry-run validation without creating bookings)
+// ============================================================================
+
+/**
+ * Validate consecutive days booking availability WITHOUT creating bookings
+ */
+export const validateConsecutiveDaysBooking = createAsyncThunk<
+    { valid: boolean; conflicts?: Array<{ date: string; reason: string }>; summary: any },
+    CreateConsecutiveDaysBookingPayload,
+    { rejectValue: ErrorResponse & { conflicts?: Array<{ date: string; reason: string }> } }
+>("booking/validateConsecutiveDaysBooking", async (payload, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.post(VALIDATE_CONSECUTIVE_DAYS_BOOKING_API, payload);
+        return response.data;
+    } catch (error: any) {
+        logger.error("Error validating consecutive days booking:", error);
+        const errorResponse = {
+            message: error.response?.data?.message || error.message || "Failed to validate booking",
+            status: error.response?.status?.toString() || "500",
+            conflicts: error.response?.data?.conflicts || undefined,
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+/**
+ * Validate weekly recurring booking availability WITHOUT creating bookings
+ */
+export const validateWeeklyRecurringBooking = createAsyncThunk<
+    { valid: boolean; conflicts?: Array<{ date: string; reason: string }>; summary: any },
+    CreateWeeklyRecurringPayload,
+    { rejectValue: ErrorResponse & { conflicts?: Array<{ date: string; reason: string }> } }
+>("booking/validateWeeklyRecurringBooking", async (payload, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.post(VALIDATE_WEEKLY_RECURRING_BOOKING_API, payload);
+        return response.data;
+    } catch (error: any) {
+        logger.error("Error validating weekly recurring booking:", error);
+        const errorResponse = {
+            message: error.response?.data?.message || error.message || "Failed to validate booking",
             status: error.response?.status?.toString() || "500",
             conflicts: error.response?.data?.conflicts || undefined,
         };
@@ -478,6 +505,39 @@ export const createPayOSPayment = createAsyncThunk<
         };
     } catch (error: any) {
         logger.error("Error creating PayOS payment:", error);
+        const errorResponse: ErrorResponse = {
+            message: error.response?.data?.message || error.message || "Khong the tao link thanh toan PayOS",
+            status: error.response?.status?.toString() || "500",
+        };
+        return thunkAPI.rejectWithValue(errorResponse);
+    }
+});
+
+/**
+ * Create PayOS payment link for RECURRING booking group
+ */
+export const createPayOSPaymentRecurring = createAsyncThunk<
+    { checkoutUrl: string; paymentLinkId: string; orderCode: number },
+    string, // bookingId (any booking in the group)
+    { rejectValue: ErrorResponse }
+>("booking/createPayOSPaymentRecurring", async (bookingId, thunkAPI) => {
+    try {
+        const response = await axiosPrivate.post(CREATE_PAYOS_PAYMENT_RECURRING_API(bookingId));
+
+        logger.debug('PayOS Recurring Response:', response);
+        const paymentData = response.data?.data || response.data;
+
+        if (!paymentData.checkoutUrl) {
+            throw new Error('Khong nhan duoc link thanh toan tu server');
+        }
+
+        return {
+            checkoutUrl: paymentData.checkoutUrl,
+            paymentLinkId: paymentData.paymentLinkId,
+            orderCode: paymentData.orderCode,
+        };
+    } catch (error: any) {
+        logger.error("Error creating PayOS recurring payment:", error);
         const errorResponse: ErrorResponse = {
             message: error.response?.data?.message || error.message || "Khong the tao link thanh toan PayOS",
             status: error.response?.status?.toString() || "500",

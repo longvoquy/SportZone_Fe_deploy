@@ -933,7 +933,7 @@ export const BookCourtTab: React.FC<BookCourtTabProps> = ({
                                                             {/* Slot Row */}
                                                             <div className="flex border-b-2 border-gray-300 bg-white">
                                                                 <div className="w-24 shrink-0 border-r-2 border-gray-300 p-2 text-xs font-medium text-center bg-gray-50">
-                                                                    {venue.name}
+                                                                    
                                                                 </div>
                                                                 <div className="flex flex-1">
                                                                     {availableSlots.map((slotTime) => {

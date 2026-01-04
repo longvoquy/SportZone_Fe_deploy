@@ -5,11 +5,11 @@ import { NavbarDarkComponent } from "@/components/header/navbar-dark-component";
 import { BookingFieldTabs } from "../field-booking-page/component/booking-field-tabs"; // Reuse component
 import { BookingStep } from "@/components/enums/ENUMS";
 import { BookCourtAiTabExport } from "./fieldTabs/bookCourtAi";
-import { AmenitiesTab } from "../field-booking-page/fieldTabs/amenities";
-import { PersonalInfoTab } from "../field-booking-page/fieldTabs/personalInfo";
+import { AmenitiesMultiple } from "./fieldTabs/AmenitiesMultiple";
+import { PersonalInfoAi } from "./fieldTabs/PersonalInfoAi";
 import type { BookingFormData } from "../field-booking-page/fieldTabs/personalInfo";
-import { ConfirmCourtTab } from "../field-booking-page/fieldTabs/confirmCourt";
-import { PaymentV2 } from "../field-booking-page/fieldTabs/payment";
+import { ConfirmMultiple } from "./fieldTabs/ConfirmMultiple";
+import { PaymentMultiple } from "./fieldTabs/PaymentMultiple";
 import { useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { getFieldById } from "@/features/field/fieldThunk";
@@ -62,6 +62,10 @@ const FieldBookingAiPage = () => {
     // Amenities selection data
     const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
 
+    // AI Booking payload (validated but not yet created)
+    const [aiBookingPayload, setAiBookingPayload] = useState<any>(null);
+    const [aiBookingType, setAiBookingType] = useState<'consecutive' | 'weekly' | null>(null);
+
     // Restore selected field on refresh: from URL ?fieldId= or sessionStorage
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
@@ -89,6 +93,7 @@ const FieldBookingAiPage = () => {
     useEffect(() => {
         if (authUser) {
             try {
+                // Restore basic form data
                 const raw = sessionStorage.getItem('bookingAiFormData');
                 if (raw) {
                     const parsed = JSON.parse(raw);
@@ -107,10 +112,24 @@ const FieldBookingAiPage = () => {
 
                         // If we have complete booking data, move to amenities step
                         if (parsed.date && parsed.startTime && parsed.endTime) {
-                            setCurrentStep(BookingStep.AMENITIES);
+                            // Only set step if not already restored to payment
+                            if (currentStep === BookingStep.BOOK_COURT) {
+                                setCurrentStep(BookingStep.AMENITIES);
+                            }
                         }
                     }
                 }
+
+                // Restore AI Booking Payload
+                const rawPayload = sessionStorage.getItem('aiBookingPayload');
+                const rawType = sessionStorage.getItem('aiBookingType');
+                if (rawPayload) {
+                    setAiBookingPayload(JSON.parse(rawPayload));
+                }
+                if (rawType === 'consecutive' || rawType === 'weekly') {
+                    setAiBookingType(rawType);
+                }
+
             } catch (error) {
                 logger.warn('Failed to restore booking data from sessionStorage', error);
             }
@@ -157,14 +176,32 @@ const FieldBookingAiPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentField?.id]);
 
-    const handleBookCourtSubmit = (formData: BookingFormData) => {
-        // Cho phép tiếp tục đặt sân mà không cần đăng nhập
-        setBookingData(formData);
-        // Move to amenities selection before confirmation
+    const handleBookCourtSubmit = (payload: any) => {
+        // Store the validated booking payload (not created yet)
+        setAiBookingPayload(payload);
+
+        // Store booking type if available in payload
+        if (payload.type) {
+            setAiBookingType(payload.type);
+        }
+
+        // Also update basic booking data for display in subsequent steps
+        setBookingData(prev => ({
+            ...prev,
+            date: payload.startDate || payload.date || prev.date,
+            startTime: payload.startTime || prev.startTime,
+            endTime: payload.endTime || prev.endTime,
+            courtId: payload.courtId || prev.courtId,
+        }));
+        // Move to amenities selection
         setCurrentStep(BookingStep.AMENITIES);
         // Persist session
         try {
-            sessionStorage.setItem('bookingAiFormData', JSON.stringify(formData));
+            sessionStorage.setItem('bookingAiFormData', JSON.stringify(payload));
+            sessionStorage.setItem('aiBookingPayload', JSON.stringify(payload));
+            if (payload.type) {
+                sessionStorage.setItem('aiBookingType', payload.type);
+            }
         } catch { }
     };
 
@@ -234,26 +271,30 @@ const FieldBookingAiPage = () => {
 
                 {/* Conditional rendering based on current step */}
                 {currentStep === BookingStep.AMENITIES && (
-                    <AmenitiesTab
+                    <AmenitiesMultiple
                         venue={currentField || undefined}
                         selectedAmenityIds={selectedAmenityIds}
                         onChangeSelected={setSelectedAmenityIds}
                         onBack={handleAmenitiesBack}
                         onSubmit={handleAmenitiesSubmit}
+                        numberOfDays={aiBookingPayload?.summary?.totalDates || aiBookingPayload?.summary?.datesBooked || aiBookingPayload?.totalDays || 1}
+                        bookingType={aiBookingType || 'consecutive'}
                     />
                 )}
 
-                {currentStep === BookingStep.PERSONAL_INFO && (
-                    <PersonalInfoTab
+                {currentStep === BookingStep.PERSONAL_INFO && aiBookingPayload && aiBookingType && (
+                    <PersonalInfoAi
                         bookingData={bookingData}
                         onSubmit={handlePersonalInfoSubmit}
                         onBack={handleBackToConfirmStep}
                         courts={courts}
+                        aiBookingPayload={aiBookingPayload}
+                        aiBookingType={aiBookingType}
                     />
                 )}
 
                 {currentStep === BookingStep.ORDER_CONFIRMATION && (
-                    <ConfirmCourtTab
+                    <ConfirmMultiple
                         bookingData={bookingData}
                         selectedAmenityIds={selectedAmenityIds}
                         amenities={(currentField as any)?.amenities?.map((a: any) => ({
@@ -264,22 +305,20 @@ const FieldBookingAiPage = () => {
                         onSubmit={(data) => { setBookingData(data); setCurrentStep(BookingStep.PERSONAL_INFO); }}
                         onBack={() => { setCurrentStep(BookingStep.AMENITIES); }}
                         courts={courts}
+                        numberOfDays={aiBookingPayload?.summary?.totalDates || aiBookingPayload?.summary?.datesBooked || aiBookingPayload?.totalDays || 1}
+                        bookingType={aiBookingType || 'consecutive'}
+                        aiBookingPayload={aiBookingPayload}
                     />
                 )}
 
-                {currentStep === BookingStep.PAYMENT && (
-                    <PaymentV2
+                {currentStep === BookingStep.PAYMENT && aiBookingType && (
+                    <PaymentMultiple
                         bookingData={bookingData}
-                        selectedAmenityIds={selectedAmenityIds}
-                        amenities={(currentField as any)?.amenities?.map((a: any) => ({
-                            id: a?.amenityId,
-                            name: a?.name,
-                            price: Number(a?.price) || 0,
-                        })) || []}
+                        aiBookingType={aiBookingType}
                         onPaymentComplete={handlePaymentComplete}
                         onBack={handleBackToConfirm}
-                        onCountdownExpired={() => {
-                            // Reset to step 1 when countdown expires
+                        onRestart={() => {
+                            // Reset to step 1
                             setCurrentStep(BookingStep.BOOK_COURT);
                             setBookingData({
                                 date: '',
@@ -292,9 +331,13 @@ const FieldBookingAiPage = () => {
                                 phone: '',
                             });
                             setSelectedAmenityIds([]);
+                            setAiBookingPayload(null);
+                            setAiBookingType(null);
                             // Clear persisted step
                             try {
                                 sessionStorage.removeItem('bookingAiCurrentStep');
+                                sessionStorage.removeItem('aiBookingPayload');
+                                sessionStorage.removeItem('aiBookingType');
                             } catch (error) {
                                 logger.warn('Failed to clear step from sessionStorage', error);
                             }

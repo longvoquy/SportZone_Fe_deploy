@@ -779,7 +779,7 @@ const FieldDetailPage: React.FC = () => {
                           className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md border-0 group/btn h-9 text-xs"
                         >
                           <Sparkles className="mr-2 h-3.5 w-3.5 group-hover/btn:animate-pulse" />
-                          Đặt nhiều sân bằng AI
+                          Đặt sân hàng loạt
                         </Button>
                       </CardContent>
                     </Card>
