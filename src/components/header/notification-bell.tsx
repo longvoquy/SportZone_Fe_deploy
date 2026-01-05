@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { useSocket } from "@/hooks/useSocket";
 import axiosInstance from "../../utils/axios/axiosPrivate";
-import logger from "../../utils/logger";
 
 interface Notification {
   id: string;
@@ -25,12 +24,17 @@ interface Notification {
   url: string;
 }
 
+type FilterType = "all" | "admin" | "non-admin";
+
 interface NotificationBellProps {
   userId: string | null;
   variant?: "default" | "sidebar";
   iconClassName?: string;
-  /** Callback when a new notification is received via socket */
-  onNotificationReceived?: (notification: { id: string; message: string; type?: string }) => void;
+  onNotificationReceived?: (notification: {
+    id: string;
+    message: string;
+    type?: string;
+  }) => void;
 }
 
 export function NotificationBell({
@@ -42,227 +46,132 @@ export function NotificationBell({
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [filter, setFilter] = useState<FilterType>("all");
 
-  // Only create socket connection if userId exists
   const socket = useSocket("notifications");
 
-  // Early return if no userId - don't render anything or make API calls
-  if (!userId) {
-    return null;
-  }
+  if (!userId) return null;
 
-  // Fetch all notifications on mount
+  /* ---------------- Fetch notifications ---------------- */
   useEffect(() => {
-    if (!userId) return;
-
     const fetchNotifications = async () => {
       try {
-        const [notificationResponse, unreadResponse] = await Promise.all([
-          axiosInstance.get(`/notifications/user/${userId}`),
-          axiosInstance.get(`/notifications/user/${userId}/unread-count`)
+        const [listRes, unreadRes] = await Promise.all([
+          axiosInstance.get(
+            `/notifications/user/${userId}?type=${filter}`
+          ),
+          axiosInstance.get(
+            `/notifications/user/${userId}/unread-count`
+          ),
         ]);
 
-        const rawData = Array.isArray(notificationResponse.data)
-          ? notificationResponse.data
-          : notificationResponse.data.data || [];
+        const raw = Array.isArray(listRes.data)
+          ? listRes.data
+          : listRes.data?.data || [];
 
-        const notificationData: Notification[] = rawData.map((item: any) => ({
-          id: item.id || item._id,
-          content: item.message || item.title || item.content || "Thông báo mới",
-          created_at: item.created_at || item.createdAt || new Date().toISOString(),
-          isRead: item.isRead ?? false,
-          url: item.url || "/notifications",
+        const mapped: Notification[] = raw.map((n: any) => ({
+          id: n.id || n._id,
+          content: n.message || n.title || n.content || "Thông báo mới",
+          created_at: n.createdAt || n.created_at || new Date().toISOString(),
+          isRead: n.isRead ?? false,
+          url: n.url || "/notifications",
         }));
 
-        setNotifications(notificationData);
+        setNotifications(mapped);
 
-        const unreadData = unreadResponse.data;
-        const unreadCountValue = typeof unreadData === 'number'
-          ? unreadData
-          : (unreadData?.data ?? unreadData?.count ?? 0);
+        const unread =
+          typeof unreadRes.data === "number"
+            ? unreadRes.data
+            : unreadRes.data?.count || unreadRes.data?.data || 0;
 
-        setUnreadCount(unreadCountValue);
-      } catch (error) {
-        logger.error("Error fetching notifications:", error);
+        setUnreadCount(unread);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
       }
     };
-    fetchNotifications();
-  }, [userId]);
 
+    fetchNotifications();
+  }, [userId, filter]);
+
+  /* ---------------- Socket handling ---------------- */
   useEffect(() => {
     if (!socket) return;
 
-    interface IncomingNotification {
-      id?: string;
-      _id?: string;
-      title?: string;
-      message?: string;
-      createdAt?: string;
-      created_at?: string;
-      url?: string;
-    }
-
-    const handleNotification = (data: IncomingNotification) => {
-      const notificationId = data?.id || data?._id;
-      if (!notificationId) {
-        logger.warn("Notification received without an id, skipping:", data);
-        return;
-      }
+    const handleNotification = (data: any) => {
+      const id = data.id || data._id;
+      if (!id) return;
 
       const newNotification: Notification = {
-        id: notificationId,
-        content: data?.message || data?.title || "Bạn có thông báo mới!",
-        created_at:
-          data?.createdAt ||
-          data?.created_at ||
-          new Date().toISOString(),
-        url: data?.url || "/notifications",
+        id,
+        content: data.message || data.title || "Bạn có thông báo mới!",
+        created_at: data.createdAt || new Date().toISOString(),
+        url: data.url || "/notifications",
       };
 
       setNotifications((prev) => [newNotification, ...prev]);
       setUnreadCount((prev) => prev + 1);
 
-      // Show toast notification with styling
-      toast.success(data?.message || data?.title || "Bạn có thông báo mới!", {
+      toast.success(newNotification.content, {
         description: "Nhấn để xem chi tiết",
         duration: 5000,
       });
 
-      // Invoke callback if provided (e.g., for dashboard to refresh)
-      if (onNotificationReceived) {
-        onNotificationReceived({
-          id: notificationId,
-          message: data?.message || data?.title || "Bạn có thông báo mới!",
-          type: (data as any)?.type,
-        });
-      }
+      onNotificationReceived?.({
+        id,
+        message: newNotification.content,
+        type: data.type,
+      });
     };
 
     socket.on("notification", handleNotification);
-
     return () => {
       socket.off("notification", handleNotification);
     };
-  }, [socket, userId, onNotificationReceived]);
+  }, [socket, onNotificationReceived]);
 
-  // Listen for in-app notifications broadcasted via localStorage (from chat websocket)
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key !== 'inapp:notification' || !e.newValue) return;
-      try {
-        const data = JSON.parse(e.newValue);
-        const notification: Notification = {
-          id: data.id || `${Date.now()}`,
-          content: data.message || data.title || 'Bạn có thông báo mới!',
-          created_at: data.createdAt || new Date().toISOString(),
-          url: data.url || '/notifications',
-        };
-
-        // Avoid duplicates by id
-        setNotifications(prev => {
-          if (prev.some(n => n.id === notification.id)) return prev;
-          return [notification, ...prev];
-        });
-        setUnreadCount(prev => prev + 1);
-        toast(notification.content);
-      } catch (err) {
-        logger.error('Failed to parse inapp notification', err);
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
-
-  // Also handle same-tab custom event from chat websocket
-  useEffect(() => {
-    const onCustom = (e: Event) => {
-      try {
-        const detail = (e as CustomEvent).detail as any;
-        if (!detail) return;
-        const notification: Notification = {
-          id: detail.id || `${Date.now()}`,
-          content: detail.message || detail.title || 'Bạn có thông báo mới!',
-          created_at: detail.createdAt || new Date().toISOString(),
-          url: detail.url || '/notifications',
-        };
-        setNotifications(prev => {
-          if (prev.some(n => n.id === notification.id)) return prev;
-          return [notification, ...prev];
-        });
-        setUnreadCount(prev => prev + 1);
-        toast(notification.content);
-      } catch (err) {
-        logger.error('Failed to handle custom inapp:notification', err);
-      }
-    };
-    window.addEventListener('inapp:notification', onCustom as EventListener);
-    return () => window.removeEventListener('inapp:notification', onCustom as EventListener);
-  }, []);
-
-  const handleMarkAsRead = async () => {
-    if (!userId) return;
-
+  /* ---------------- Actions ---------------- */
+  const markAllAsRead = async () => {
     try {
-      // Mark all notifications as read
       await axiosInstance.patch(`/notifications/user/${userId}/read-all`);
-
-      // Update local state
-      setNotifications(prev =>
-        prev.map(notif => ({ ...notif, isRead: true }))
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, isRead: true }))
       );
       setUnreadCount(0);
-    } catch (error) {
-      logger.error("Error marking all as read:", error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.isRead) {
-      try {
-        // Mark individual notification as read
-        await axiosInstance.patch(`/notifications/${notification.id}/read`);
-
-        // Update local state
-        setNotifications(prev =>
-          prev.map(notif =>
-            notif.id === notification.id
-              ? { ...notif, isRead: true }
-              : notif
-          )
-        );
-
-        // Decrease unread count
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      } catch (error) {
-        logger.error("Error marking notification as read:", error);
-      }
+  const handleClick = async (n: Notification) => {
+    if (!n.isRead) {
+      await axiosInstance.patch(`/notifications/${n.id}/read`);
+      setNotifications((prev) =>
+        prev.map((x) =>
+          x.id === n.id ? { ...x, isRead: true } : x
+        )
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
     }
 
-    // Navigate to the notification URL
-    if (notification.url) {
-      if (notification.url.startsWith('http')) {
-        window.location.href = notification.url;
-      } else {
-        navigate(notification.url);
-      }
+    if (n.url.startsWith("http")) {
+      window.location.href = n.url;
+    } else {
+      navigate(n.url);
     }
   };
 
-  const formatTime = (dateString?: string) => {
-    if (!dateString) return "Vừa xong";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Vừa xong";
-
+  const formatTime = (date?: string) => {
     try {
-      return formatDistanceToNow(date, {
+      return formatDistanceToNow(new Date(date || ""), {
         addSuffix: true,
         locale: vi,
       });
-    } catch (error) {
+    } catch {
       return "Vừa xong";
     }
   };
 
+  /* ---------------- Render ---------------- */
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -273,68 +182,87 @@ export function NotificationBell({
             ? "text-primary-200 hover:text-white hover:bg-primary-700"
             : ""
             }`}
-          title="Thông báo"
         >
-          <Bell
-            className={iconClassName || `h-5 w-5 ${variant === "sidebar" ? "text-primary-200" : ""}`}
-          />
+          <Bell className={iconClassName || "h-5 w-5"} />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
               {unreadCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 bg-white" align="end">
+
+      <PopoverContent
+        align="end"
+        className="w-80 p-0 bg-white text-black border shadow-lg"
+      >
+        {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-2">
           <h4 className="font-medium">Thông báo</h4>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleMarkAsRead}
+              onClick={markAllAsRead}
               className="text-xs"
             >
-              Đánh dấu đã đọc
+              Đã đọc hết
             </Button>
           )}
         </div>
+
+        {/* Filter */}
+        <div className="flex justify-center gap-1 px-2 py-2 border-b bg-muted/30">
+          {[
+            { key: "all", label: "Tất cả" },
+            { key: "non-admin", label: "Của bạn" },
+            { key: "admin", label: "Hệ thống" },
+          ].map((f) => (
+            <Button
+              key={f.key}
+              size="sm"
+              variant={filter === f.key ? "default" : "ghost"}
+              onClick={() => setFilter(f.key as FilterType)}
+              className="h-7 px-3 text-xs"
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* List */}
         <ScrollArea className="h-[300px]">
-          {notifications.length > 0 ? (
-            <div className="flex flex-col">
-              {notifications.map((notification) => (
-                <a
-                  key={notification.id}
-                  href={notification.url}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNotificationClick(notification);
-                  }}
-                  className={`flex flex-col border-b p-4 hover:bg-muted/50 cursor-pointer ${notification.isRead ? "bg-white" : "bg-gray-100 hover:rounded-xl"
-                    }`}
-                >
-                  <p className="text-sm">{notification.content}</p>
-                  <span className="mt-1 text-xs text-muted-foreground">
-                    {formatTime(notification.created_at)}
+          {notifications.length ? (
+            notifications.map((n) => (
+              <div
+                key={n.id}
+                onClick={() => handleClick(n)}
+                className={`border-b p-4 cursor-pointer hover:bg-muted/50 ${n.isRead ? "bg-white" : "bg-gray-100"
+                  }`}
+              >
+                <p className="text-sm">{n.content}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {formatTime(n.created_at)}
                   </span>
-                  {!notification.isRead && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+                  {!n.isRead && (
+                    <span className="w-2 h-2 bg-blue-500 rounded-full" />
                   )}
-                </a>
-              ))}
-            </div>
+                </div>
+              </div>
+            ))
           ) : (
-            <div className="flex h-full items-center justify-center p-4">
-              <p className="text-sm text-muted-foreground">
-                Không có thông báo
-              </p>
+            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+              Không có thông báo
             </div>
           )}
         </ScrollArea>
-        <div className="border-t p-2 text-center bg-gray-50">
+
+        {/* Footer */}
+        <div className="border-t bg-gray-50 p-2 text-center">
           <Link
             to="/notifications"
-            className="text-sm font-medium text-green-600 hover:text-green-700 flex items-center justify-center py-1"
+            className="text-sm font-medium text-green-600 hover:text-green-700"
           >
             Xem thêm
           </Link>
