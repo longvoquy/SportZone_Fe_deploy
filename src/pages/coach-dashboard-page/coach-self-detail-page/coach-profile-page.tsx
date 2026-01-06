@@ -978,7 +978,7 @@ export default function CoachSelfDetailPage() {
                           <Badge className="bg-green-500 hover:bg-green-600 text-white border-0">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                           </Badge>
-                          <div className="ml-auto flex items-center gap-2">
+                          <div className="ml-auto flex items-center gap-2" style={{ display: 'none' }}>
                             <Label className="text-sm text-muted-foreground">Chế độ chỉnh sửa</Label>
                             <Switch
                               checked={isEditMode}
@@ -1296,6 +1296,7 @@ export default function CoachSelfDetailPage() {
                         checked={isCoachActive}
                         onCheckedChange={(val) => { setIsCoachActive(val); setIsDirty(true); }}
                         className="data-[state=unchecked]:bg-gray-300 data-[state=checked]:bg-green-600"
+                        style={{ display: 'none' }}
                       />
                     </div>
 
