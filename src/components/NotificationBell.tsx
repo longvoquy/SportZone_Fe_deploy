@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axiosPublic from "../utils/axios/axiosPublic";
+import axiosInstance from "../utils/axios/axiosPrivate";
 
 type Notification = {
   _id: string;
@@ -42,7 +42,7 @@ export default function NotificationBell() {
   const unread = items.filter(n => !n.isRead).length;
 
   const markAsRead = async (id: string) => {
-    await axiosPublic.patch(`/notifications/${id}/read`);
+    await axiosInstance.patch(`/notifications/${id}/read`);
     setItems(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
   };
 

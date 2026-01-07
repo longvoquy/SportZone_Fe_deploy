@@ -53,9 +53,9 @@ const PayOSCancelPage = lazy(() => import("../pages/transactions/payos-cancel-pa
 const OwnerFieldListPage = lazy(() => import("../pages/field-owner-dashboard-page/fields/owner-field-list-page"));
 const FieldOwnerDashboardPage = lazy(() => import("../pages/field-owner-dashboard-page/dashboard/field-owner-dashboard-page"));
 const FieldOwnerWalletPage = lazy(() => import("../pages/field-owner-dashboard-page/wallet/field-owner-wallet-page"));
-const FieldHistoryBookingPage = lazy(() => import("../pages/field-owner-dashboard-page/booking-list/field-booking-list-page.tsx"));
+const FieldBookingListPage = lazy(() => import("../pages/field-owner-dashboard-page/field-booking-list/field-booking-list-page.tsx"));
+const FieldCoachBookingListPage = lazy(() => import("../pages/field-owner-dashboard-page/field-coach-booking-list/field-coach-booking-list-page.tsx"));
 const FieldOwnerAnalyticsPage = lazy(() => import("../pages/field-owner-dashboard-page/analytics/field-owner-analytics-page"));
-const FieldOwnerRevenuePage = lazy(() => import("../pages/field-owner-dashboard-page/revenue/field-owner-revenue-page"));
 const FieldOwnerProfilePage = lazy(() => import("../pages/field-owner-dashboard-page/profile/field-owner-profile-page"));
 const FieldEditPage = lazy(() => import("../pages/field-owner-dashboard-page/fields/field-edit-page"));
 const FieldViewPage = lazy(() => import("../pages/field-owner-dashboard-page/fields/field-view-page"));
@@ -77,6 +77,9 @@ const TournamentListPage = lazy(() => import("@/pages/list-tournament/Tournament
 const CreateTournamentPage = lazy(() => import("@/pages/create-tournament/CreateTournamentPage.tsx"));
 const TournamentDetailPage = lazy(() => import("@/pages/tournament-detail-page/tournament-detail-page.tsx"));
 const MyReportsPage = lazy(() => import("../pages/my-reports-page/my-reports-page"));
+
+// Test Pages
+const NotificationTestPage = lazy(() => import("../pages/test/notification-test-page"));
 
 // Error Pages
 import GeneralError from "../pages/error/general-error";
@@ -126,6 +129,9 @@ export const publicRoutes: RouteObject[] = [
   { path: "/403", element: <ForbiddenError /> },
   { path: "/401", element: <UnauthorizedError /> },
   { path: "/503", element: <MaintenanceError /> },
+
+  // Test Pages (Development)
+  { path: "/test/notifications", element: <NotificationTestPage /> },
 
   // Field Discovery & Booking (Public)
   { path: "/fields", element: <FieldBookingPage /> },
@@ -595,10 +601,26 @@ export const fieldOwnerRoutes: RouteObject[] = [
 
   // Booking & Schedule Management
   {
+    path: "/field-owner/field-bookings",
+    element: (
+      <ProtectedRoute allowedRoles={[UserRole.FIELD_OWNER]}>
+        <FieldBookingListPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/field-owner/field-coach-bookings",
+    element: (
+      <ProtectedRoute allowedRoles={[UserRole.FIELD_OWNER]}>
+        <FieldCoachBookingListPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/field-owner/booking-history",
     element: (
       <ProtectedRoute allowedRoles={[UserRole.FIELD_OWNER]}>
-        <FieldHistoryBookingPage />
+        <FieldBookingListPage />
       </ProtectedRoute>
     ),
   },
@@ -643,14 +665,6 @@ export const fieldOwnerRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={[UserRole.FIELD_OWNER]}>
         <FieldOwnerAnalyticsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/field-owner/revenue",
-    element: (
-      <ProtectedRoute allowedRoles={[UserRole.FIELD_OWNER]}>
-        <FieldOwnerRevenuePage />
       </ProtectedRoute>
     ),
   },

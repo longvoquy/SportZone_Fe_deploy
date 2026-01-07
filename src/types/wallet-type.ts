@@ -7,6 +7,7 @@ export interface UserWalletResponse {
 
 export interface FieldOwnerWalletResponse {
   pendingBalance: number
+  availableBalance: number
   currency: string
   message: string
   lastTransactionAt?: string

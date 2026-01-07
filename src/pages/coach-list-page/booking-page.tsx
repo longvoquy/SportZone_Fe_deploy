@@ -230,12 +230,18 @@ const BookingPage = () => {
                     overflow-y: auto;
                 }
 
-                /* Map container specific styles */
+            {/* Map container specific styles */}
                 .map-container {
-                    position: sticky;
-                    top: 0;
-                    height: 1078px;
+                    position: relative;
+                    height: 40vh;
                     overflow: hidden;
+                }
+                @media (min-width: 1024px) {
+                    .map-container {
+                        position: sticky;
+                        top: 0;
+                        height: 1078px;
+                    }
                 }
             `}</style>
             <NavbarDarkComponent />
@@ -244,9 +250,9 @@ const BookingPage = () => {
 
                 {/* Main container with flexbox layout */}
                 <div className="px-4 min-h-screen">
-                    <div className="flex gap-6 items-start">
+                    <div className="flex flex-col-reverse lg:flex-row gap-6 items-start">
                         {/* Left Panel - Coaches List */}
-                        <div className="flex-[6] bg-white flex flex-col h-screen">
+                        <div className="w-full lg:w-[60%] bg-white flex flex-col min-h-[50vh] lg:h-screen">
                             {/* Filters */}
                             <div className="p-4 border-b border-gray-200">
                                 <div className="flex items-center gap-4 flex-wrap">
@@ -374,14 +380,12 @@ const BookingPage = () => {
                         </div>
 
                         {/* Right Panel - Map (4/10 columns) */}
-                        <div className="flex-[4] relative">
-                            <div className="sticky top-16 h-[calc(100vh-4rem)] w-full">
-                                {addressText && (
-                                    <div className="mb-3 p-3 bg-white border border-gray-200 rounded-md text-sm text-gray-700">
-                                        Địa chỉ: {addressText}
-                                    </div>
-                                )}
-                                <div id={mapContainerId} className="absolute h-full w-full p-0 border-0 m-0 left-0 top-0" />
+                        <div className="w-full lg:w-[40%] relative">
+                            <div className="mb-3 p-3 bg-white border border-gray-200 rounded-md text-sm text-gray-700 lg:absolute lg:top-4 lg:z-10 bg-white/90">
+                                {addressText ? `Địa chỉ: ${addressText}` : 'Chọn vị trí để xem trên bản đồ'}
+                            </div>
+                            <div className="lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] w-full">
+                                <div id={mapContainerId} className="map-container relative w-full border-0 m-0" />
                             </div>
                         </div>
                     </div>

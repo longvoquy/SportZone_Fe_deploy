@@ -5,6 +5,7 @@ import {
   GET_FIELD_OWNER_WALLET_API,
   GET_ADMIN_WALLET_API,
   WITHDRAW_REFUND_API,
+  WITHDRAW_FIELD_OWNER_API,
 } from "./walletAPI";
 import type {
   UserWalletResponse,
@@ -34,7 +35,7 @@ export const getUserWallet = createAsyncThunk<
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       error?.message ||
-      "Không thể tải thông tin ví";
+      "Khong the tai thong tin vi";
     return thunkAPI.rejectWithValue(message);
   }
 });
@@ -55,7 +56,7 @@ export const getFieldOwnerWallet = createAsyncThunk<
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       error?.message ||
-      "Không thể tải thông tin ví";
+      "Khong the tai thong tin vi";
     return thunkAPI.rejectWithValue(message);
   }
 });
@@ -76,13 +77,13 @@ export const getAdminWallet = createAsyncThunk<
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       error?.message ||
-      "Không thể tải thông tin ví admin";
+      "Khong the tai thong tin vi admin";
     return thunkAPI.rejectWithValue(message);
   }
 });
 
 /**
- * Withdraw refund balance to bank
+ * Withdraw refund balance to bank (for users)
  */
 export const withdrawRefund = createAsyncThunk<
   { success: boolean; message: string },
@@ -91,13 +92,34 @@ export const withdrawRefund = createAsyncThunk<
 >("wallet/withdrawRefund", async ({ userId, payload }, thunkAPI) => {
   try {
     const response = await axiosPrivate.post(WITHDRAW_REFUND_API(userId), payload);
-    return response.data?.data ?? response.data ?? { success: true, message: "Rút tiền thành công" };
+    return response.data?.data ?? response.data ?? { success: true, message: "Rut tien thanh cong" };
   } catch (error: any) {
     const message =
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       error?.message ||
-      "Không thể xử lý yêu cầu rút tiền";
+      "Khong the xu ly yeu cau rut tien";
+    return thunkAPI.rejectWithValue(message);
+  }
+});
+
+/**
+ * Withdraw available balance to bank (for field owners)
+ */
+export const withdrawFieldOwnerBalance = createAsyncThunk<
+  { success: boolean; message: string },
+  { amount: number },
+  { rejectValue: string }
+>("wallet/withdrawFieldOwnerBalance", async (payload, thunkAPI) => {
+  try {
+    const response = await axiosPrivate.post(WITHDRAW_FIELD_OWNER_API, payload);
+    return response.data?.data ?? response.data ?? { success: true, message: "Rut tien thanh cong" };
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      "Khong the xu ly yeu cau rut tien";
     return thunkAPI.rejectWithValue(message);
   }
 });

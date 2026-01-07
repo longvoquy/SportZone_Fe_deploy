@@ -490,12 +490,12 @@ const FieldDetailPage: React.FC = () => {
   return (
     <>
       <NavbarDarkComponent />
-      <PageWrapper className="bg-white">
+      <PageWrapper className="bg-white pb-24 lg:pb-0">
         <div className="w-full">
           {extendedImages.length > 0 && (
             <div
               ref={viewportRef}
-              className="relative w-full h-96 md:h-[28rem] lg:h-[32rem] mb-6 overflow-hidden select-none rounded-lg"
+              className="relative w-full h-64 sm:h-96 md:h-[28rem] lg:h-[32rem] mb-6 overflow-hidden select-none rounded-lg"
             >
               <div
                 ref={carouselRef}
@@ -561,7 +561,7 @@ const FieldDetailPage: React.FC = () => {
                 </div>
               </div>
               {/* right */}
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center w-full md:w-auto gap-2 mt-4 md:mt-0">
                 <div className="flex md:justify-center items-center gap-4">
                   <button className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
                     <Share2 className="h-4 w-4" />
@@ -953,6 +953,32 @@ const FieldDetailPage: React.FC = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Sticky Mobile Booking Bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 lg:hidden flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="flex flex-col">
+            <span className="text-xs text-gray-500">Giá thuê</span>
+            <span className="text-lg font-bold text-green-600">
+              {currentField?.price ||
+                ((currentField as any)?.basePrice
+                  ? `${(currentField as any).basePrice.toLocaleString()}đ/h`
+                  : "Liên hệ")}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() =>
+                navigate("/field-booking", {
+                  state: { fieldId: id },
+                })
+              }
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Đặt sân ngay
+            </Button>
+          </div>
+        </div>
+
         <FooterComponent />
       </PageWrapper>
     </>

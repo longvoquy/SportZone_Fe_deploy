@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Check, ChevronLeft, ChevronRight } from "lucide-react";
-import axiosPublic from "@/utils/axios/axiosPublic";
+import axiosInstance from "@/utils/axios/axiosPrivate";
 import { formatDistanceToNow, isValid } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useAppSelector } from "@/store/hook";
@@ -75,7 +75,7 @@ export default function NotificationsContent() {
     /* ---------------- Actions ---------------- */
     const handleMarkAsRead = async (id: string) => {
         try {
-            await axiosPublic.patch(`/notifications/${id}/read`);
+            await axiosInstance.patch(`/notifications/${id}/read`);
             setNotifications((prev) =>
                 prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
             );
@@ -90,7 +90,7 @@ export default function NotificationsContent() {
             await Promise.all(
                 notifications
                     .filter((n) => !n.isRead)
-                    .map((n) => axiosPublic.patch(`/notifications/${n._id}/read`))
+                    .map((n) => axiosInstance.patch(`/notifications/${n._id}/read`))
             );
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
         } catch (err) {

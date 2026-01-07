@@ -438,7 +438,7 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
   return (
     <>
       <NavbarDarkComponent />
-      <PageWrapper className="bg-background">
+      <PageWrapper className="bg-background pb-24 lg:pb-0">
         {/* Hero Background Section */}
         <div className="relative bg-[#1a2332] overflow-hidden h-[400px]">
           {/* Background Image */}
@@ -638,6 +638,26 @@ export default function CoachDetailPage({ coachId }: CoachDetailPageProps) {
           onProfanityAlertChange={setShowProfanityAlert}
           flaggedWords={flaggedWords}
         />
+
+        {/* Sticky Mobile Booking Bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 lg:hidden flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="flex flex-col">
+            <span className="text-xs text-gray-500">Giá thuê</span>
+            <span className="text-lg font-bold text-green-600">
+              {(coachData as any)?.hourlyRate
+                ? `${(coachData as any).hourlyRate.toLocaleString()}đ/h`
+                : "Liên hệ"}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleBookNow}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Đặt lịch ngay
+            </Button>
+          </div>
+        </div>
 
         {/* Coach Chat Popup */}
         <CoachDetailChatWindow

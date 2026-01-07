@@ -6,9 +6,7 @@ import {
     List,
     Calendar,
     MessageSquare,
-    FileText,
     Wallet,
-    User,
     History,
 } from "lucide-react"
 
@@ -27,7 +25,6 @@ export function FieldOwnerDashboardTabs() {
     }
 
     const isActive = (path: string) => location.pathname === path
-    const profilePath = "/field-owner/profile"
 
     return (
         <div className="w-full px-4 pt-6 pb-2 bg-gray-100">
@@ -89,29 +86,11 @@ export function FieldOwnerDashboardTabs() {
 
                     <Button
                         variant="ghost"
-                        className={baseTabClasses(isActive("/field-owner/revenue"))}
-                        onClick={() => handleNavigation("/field-owner/revenue")}
-                    >
-                        <FileText className="w-5 h-5" />
-                        <div className="text-center text-sm font-medium">Doanh thu</div>
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        className={baseTabClasses(isActive(profilePath))}
-                        onClick={() => handleNavigation(profilePath)}
-                    >
-                        <User className="w-5 h-5" />
-                        <div className="text-center text-sm font-medium">Profile</div>
-                    </Button>
-
-                    <Button
-                        variant="ghost"
                         className={baseTabClasses(isActive("/field-owner/wallet"))}
                         onClick={() => handleNavigation("/field-owner/wallet")}
                     >
                         <Wallet className="w-5 h-5" />
-                        <div className="text-center text-sm font-medium">Ví</div>
+                        <div className="text-center text-sm font-medium">Tài chính</div>
                     </Button>
 
                     {/* <Button

@@ -6,6 +6,7 @@ import { DollarSign, Building2, TrendingUp, Calendar } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hook"
 import { getMyFields, getMyFieldsBookings, ownerAcceptBooking, ownerRejectBooking, ownerGetBookingDetail } from "@/features/field/fieldThunk"
+import { getFieldOwnerWallet } from "@/features/wallet"
 import { FieldOwnerDashboardLayout } from "@/components/layouts/field-owner-dashboard-layout"
 import CourtBookingDetails from "@/components/pop-up/court-booking-detail"
 import type { FieldOwnerBooking } from "@/types/field-type"
@@ -23,6 +24,10 @@ export default function FieldOwnerDashboardPage() {
         fieldOwnerBookingsLoading,
         fieldOwnerBookingsError
     } = useAppSelector((state) => state.field);
+
+    // Wallet state for real revenue data
+    const authUser = useAppSelector((state) => state.auth.user);
+    const { fieldOwnerWallet, fieldOwnerWalletLoading } = useAppSelector((state) => state.wallet);
 
     const socket = useSocket('notifications');
 
@@ -214,25 +219,30 @@ export default function FieldOwnerDashboardPage() {
 
     useEffect(() => {
         const loadOwnerData = () => {
-            logger.debug("Đang tải dữ liệu chủ sân");
+            logger.debug("Dang tai du lieu chu san");
 
-            // Lấy dữ liệu sân và lịch đặt bằng Redux thunks
+            // Lay du lieu san va lich dat bang Redux thunks
             try {
-                // Lấy dữ liệu sân của chủ sở hữu
+                // Lay du lieu san cua chu so huu
                 dispatch(getMyFields({}));
 
-                // Lấy dữ liệu lịch đặt của chủ sở hữu với các tham số mặc định
+                // Lay du lieu lich dat cua chu so huu voi cac tham so mac dinh
                 dispatch(getMyFieldsBookings({
                     page: 1,
-                    limit: 50 // Lấy nhiều hơn để hiển thị đầy đủ
+                    limit: 50 // Lay nhieu hon de hien thi day du
                 }));
+
+                // Lay wallet data de hien thi doanh thu thuc
+                if (authUser?._id) {
+                    dispatch(getFieldOwnerWallet(authUser._id));
+                }
             } catch (err) {
-                logger.error("Lỗi khi tải dữ liệu:", err);
+                logger.error("Loi khi tai du lieu:", err);
             }
         };
 
         loadOwnerData();
-    }, [dispatch]);
+    }, [dispatch, authUser?._id]);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Đặt lại thời gian về nửa đêm
@@ -296,27 +306,16 @@ export default function FieldOwnerDashboardPage() {
         (b) => b.transactionStatus === 'succeeded' && isToday(b.date)
     );
 
-    // Tính toán các chỉ số
+    // Tinh toan cac chi so
     const totalFields = fields?.length || 0;
     const totalBookings = bookingData.length;
     const confirmedBookings = bookingData.filter(b => b.status === "confirmed").length;
 
-    // Tính doanh thu từ các booking có transaction status SUCCEEDED
-    // Use bookingAmount directly (owner revenue = bookingAmount, platform keeps platformFee)
-    const totalRevenue = bookingData
-        .filter(b => b.transactionStatus === 'succeeded')
-        .reduce((sum, b) => {
-            // Use bookingAmount if available (new structure), otherwise calculate from totalPrice (backward compatibility)
-            if (b.bookingAmount !== undefined && b.bookingAmount !== null) {
-                return sum + b.bookingAmount;
-            } else {
-                // Backward compatibility: calculate from totalPrice
-                const totalPrice = b.totalPrice || 0;
-                const platformFeeRate = 0.05;
-                const ownerRevenue = totalPrice * (1 - platformFeeRate);
-                return sum + ownerRevenue;
-            }
-        }, 0);
+    // Tong doanh thu tu wallet (pendingBalance + availableBalance)
+    // Day la doanh thu thuc da duoc cap nhat khi thanh toan thanh cong
+    const pendingBalance = fieldOwnerWallet?.pendingBalance || 0;
+    const availableBalance = fieldOwnerWallet?.availableBalance || 0;
+    const totalRevenue = pendingBalance + availableBalance;
 
     // Dữ liệu cho phần thống kê
     const metrics = [
@@ -778,20 +777,27 @@ export default function FieldOwnerDashboardPage() {
 
                     {/* Cột phải */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Tóm tắt doanh thu */}
+                        {/* Tom tat doanh thu */}
                         <Card className="bg-emerald-700 text-white">
                             <CardContent>
                                 <div className="flex items-center justify-between mb-2 pt-6">
                                     <div>
-                                        <p className="text-sm opacity-90">Doanh thu tháng này</p>
-                                        <p className="text-xl font-bold">{totalRevenue.toLocaleString('vi-VN')} ₫</p>
+                                        <p className="text-sm opacity-90">Tong doanh thu</p>
+                                        <p className="text-xl font-bold">{fieldOwnerWalletLoading ? 'Dang tai...' : `${totalRevenue.toLocaleString('vi-VN')} d`}</p>
+                                        {!fieldOwnerWalletLoading && (
+                                            <div className="text-xs opacity-80 mt-1">
+                                                <span>Cho xu ly: {pendingBalance.toLocaleString('vi-VN')} d</span>
+                                                <span className="mx-2">|</span>
+                                                <span>Co the rut: {availableBalance.toLocaleString('vi-VN')} d</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <Button
                                         variant="secondary"
                                         className="bg-white/20 hover:bg-white/30 text-white flex items-center justify-center gap-2"
                                     >
                                         <DollarSign className="w-4 h-4" />
-                                        Xem chi tiết
+                                        Xem chi tiet
                                     </Button>
                                 </div>
                             </CardContent>

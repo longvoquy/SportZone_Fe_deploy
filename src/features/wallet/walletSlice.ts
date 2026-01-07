@@ -9,6 +9,7 @@ import {
   getFieldOwnerWallet,
   getAdminWallet,
   withdrawRefund,
+  withdrawFieldOwnerBalance,
 } from "./walletThunk";
 
 interface WalletState {
@@ -130,7 +131,7 @@ const walletSlice = createSlice({
         state.adminWallet = null;
       });
 
-    // Withdraw refund
+    // Withdraw refund (for users)
     builder
       .addCase(withdrawRefund.pending, (state) => {
         state.withdrawLoading = true;
@@ -139,12 +140,26 @@ const walletSlice = createSlice({
       .addCase(withdrawRefund.fulfilled, (state) => {
         state.withdrawLoading = false;
         state.withdrawError = null;
-        // Refetch user wallet after successful withdraw
-        // This will be handled by the component
       })
       .addCase(withdrawRefund.rejected, (state, action) => {
         state.withdrawLoading = false;
-        state.withdrawError = action.payload || "Lỗi không xác định";
+        state.withdrawError = action.payload || "Loi khong xac dinh";
+      });
+
+    // Withdraw field owner balance
+    builder
+      .addCase(withdrawFieldOwnerBalance.pending, (state) => {
+        state.withdrawLoading = true;
+        state.withdrawError = null;
+      })
+      .addCase(withdrawFieldOwnerBalance.fulfilled, (state) => {
+        state.withdrawLoading = false;
+        state.withdrawError = null;
+        // Refetch field owner wallet after successful withdraw handled in component
+      })
+      .addCase(withdrawFieldOwnerBalance.rejected, (state, action) => {
+        state.withdrawLoading = false;
+        state.withdrawError = action.payload || "Loi khong xac dinh";
       });
   },
 });

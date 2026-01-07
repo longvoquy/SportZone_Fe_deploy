@@ -25,6 +25,8 @@ import { useEffect, Suspense } from 'react';
 import { webSocketService } from '@/features/chat/websocket.service';
 import { Loading } from '@/components/ui/loading';
 import { Toaster } from "@/components/ui/sonner";
+import { NotificationBannerProvider } from "@/context/notification-banner-context";
+import { BannerNotificationContainer } from "@/components/notification/banner-notification-container";
 // const RequireAuth = ({ children }: { children: ReactElement }) => {
 //   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 //   if (!token) {
@@ -38,7 +40,9 @@ const router = createBrowserRouter([
     element: (
       <>
         <ScrollRestoration />
-        <RootLayout />
+        <NotificationBannerProvider>
+          <RootLayout />
+        </NotificationBannerProvider>
       </>
     ),
     children: [

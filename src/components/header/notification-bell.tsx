@@ -11,10 +11,12 @@ import {
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { useSocket } from "@/hooks/useSocket";
 import axiosInstance from "../../utils/axios/axiosPrivate";
+import logger from "../../utils/logger";
+import { useNotificationBanner } from "@/context/notification-banner-context";
+import { type BannerNotification } from "@/types/notification-type";
 
 interface Notification {
   id: string;
@@ -47,6 +49,7 @@ export function NotificationBell({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState<FilterType>("all");
+  const { showNotification: showBannerNotification } = useNotificationBanner();
 
   const socket = useSocket("notifications");
 
@@ -97,12 +100,26 @@ export function NotificationBell({
   useEffect(() => {
     if (!socket) return;
 
-    const handleNotification = (data: any) => {
-      const id = data.id || data._id;
-      if (!id) return;
+    interface IncomingNotification {
+      id?: string;
+      _id?: string;
+      title?: string;
+      message?: string;
+      createdAt?: string;
+      created_at?: string;
+      url?: string;
+      type?: string;
+    }
+
+    const handleNotification = (data: IncomingNotification) => {
+      const notificationId = data?.id || data?._id;
+      if (!notificationId) {
+        logger.warn("Notification received without an id, skipping:", data);
+        return;
+      }
 
       const newNotification: Notification = {
-        id,
+        id: notificationId,
         content: data.message || data.title || "Bạn có thông báo mới!",
         created_at: data.createdAt || new Date().toISOString(),
         url: data.url || "/notifications",
@@ -111,13 +128,20 @@ export function NotificationBell({
       setNotifications((prev) => [newNotification, ...prev]);
       setUnreadCount((prev) => prev + 1);
 
-      toast.success(newNotification.content, {
-        description: "Nhấn để xem chi tiết",
-        duration: 5000,
-      });
+      // Show banner notification instead of toast
+      const bannerNotification: BannerNotification = {
+        id: notificationId,
+        title: data?.title || "Thông báo mới",
+        message: data?.message || data?.title || "Bạn có thông báo mới!",
+        type: data?.type || "admin_notifcation",
+        url: data?.url || "/notifications",
+        createdAt: data?.createdAt || data?.created_at || new Date().toISOString(),
+      };
+
+      showBannerNotification(bannerNotification);
 
       onNotificationReceived?.({
-        id,
+        id: notificationId,
         message: newNotification.content,
         type: data.type,
       });
@@ -127,11 +151,87 @@ export function NotificationBell({
     return () => {
       socket.off("notification", handleNotification);
     };
-  }, [socket, onNotificationReceived]);
+  }, [socket, userId, onNotificationReceived, showBannerNotification]);
 
-  /* ---------------- Actions ---------------- */
+  // Listen for in-app notifications broadcasted via localStorage (from chat websocket)
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== 'inapp:notification' || !e.newValue) return;
+      try {
+        const data = JSON.parse(e.newValue);
+        const notification: Notification = {
+          id: data.id || `${Date.now()}`,
+          content: data.message || data.title || 'Bạn có thông báo mới!',
+          created_at: data.createdAt || new Date().toISOString(),
+          url: data.url || '/notifications',
+        };
+
+        // Avoid duplicates by id
+        setNotifications(prev => {
+          if (prev.some(n => n.id === notification.id)) return prev;
+          return [notification, ...prev];
+        });
+        setUnreadCount(prev => prev + 1);
+
+        // Show banner notification
+        const bannerNotification: BannerNotification = {
+          id: notification.id,
+          title: data.title || "Thông báo mới",
+          message: notification.content,
+          type: data.type || "admin_notifcation",
+          url: notification.url,
+          createdAt: notification.created_at,
+        };
+        showBannerNotification(bannerNotification);
+      } catch (err) {
+        logger.error('Failed to parse inapp notification', err);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [showBannerNotification]);
+
+  // Also handle same-tab custom event from chat websocket
+  useEffect(() => {
+    const onCustom = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail as any;
+        if (!detail) return;
+        const notification: Notification = {
+          id: detail.id || `${Date.now()}`,
+          content: detail.message || detail.title || 'Bạn có thông báo mới!',
+          created_at: detail.createdAt || new Date().toISOString(),
+          url: detail.url || '/notifications',
+        };
+        setNotifications(prev => {
+          if (prev.some(n => n.id === notification.id)) return prev;
+          return [notification, ...prev];
+        });
+        setUnreadCount(prev => prev + 1);
+
+        // Show banner notification
+        const bannerNotification: BannerNotification = {
+          id: notification.id,
+          title: detail.title || "Thông báo mới",
+          message: notification.content,
+          type: detail.type || "admin_notifcation",
+          url: notification.url,
+          createdAt: notification.created_at,
+        };
+        showBannerNotification(bannerNotification);
+      } catch (err) {
+        logger.error('Failed to handle custom inapp:notification', err);
+      }
+    };
+    window.addEventListener('inapp:notification', onCustom as EventListener);
+    return () => window.removeEventListener('inapp:notification', onCustom as EventListener);
+  }, [showBannerNotification]);
+
   const markAllAsRead = async () => {
+    if (!userId) return;
+
     try {
+      // Mark all notifications as read
       await axiosInstance.patch(`/notifications/user/${userId}/read-all`);
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, isRead: true }))

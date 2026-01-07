@@ -15,6 +15,7 @@ import type { Field } from '@/types/field-type';
 import { PaymentMethod } from '@/types/payment-type';
 import { formatCurrency } from '@/utils/format-currency';
 import { getSportDisplayNameVN } from '@/components/enums/ENUMS';
+import { BookingCheckInSection } from '@/components/booking/booking-check-in-section';
 
 interface BookingDetailModalProps {
     isOpen: boolean;
@@ -373,6 +374,17 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ isOpen, onClose
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    )}
+
+                    {/* QR Check-in Section - Only for confirmed bookings */}
+                    {booking.status.toLowerCase() === 'confirmed' && typeof booking.payment === 'object' && booking.payment?.status === 'succeeded' && (
+                        <div className="lg:col-span-2">
+                            <BookingCheckInSection
+                                bookingId={booking._id}
+                                startTime={new Date(booking.date + 'T' + booking.startTime)}
+                                status={booking.status}
+                            />
                         </div>
                     )}
 

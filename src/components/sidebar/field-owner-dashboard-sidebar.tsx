@@ -124,13 +124,16 @@ export function FieldOwnerSidebar() {
     const { fieldId } = useParams<{ fieldId: string }>()
     const authUser = useAppSelector((state) => state.auth.user)
     const isFieldCreatePage = location.pathname === "/field/create"
-    const isBookingHistoryPage = location.pathname === "/field-owner/booking-history"
+    const isFieldBookingPage = location.pathname === "/field-owner/field-bookings"
+    const isFieldCoachBookingPage = location.pathname === "/field-owner/field-coach-bookings"
     const isFieldsPage = location.pathname.startsWith("/field-owner/fields")
     const [isCreateFieldSubmenuOpen, setIsCreateFieldSubmenuOpen] = useState(isFieldCreatePage)
-    const [isBookingHistorySubmenuOpen, setIsBookingHistorySubmenuOpen] = useState(isBookingHistoryPage)
+    const [isFieldBookingSubmenuOpen, setIsFieldBookingSubmenuOpen] = useState(isFieldBookingPage)
+    const [isFieldCoachBookingSubmenuOpen, setIsFieldCoachBookingSubmenuOpen] = useState(isFieldCoachBookingPage)
     const [isFieldsSubmenuOpen, setIsFieldsSubmenuOpen] = useState(isFieldsPage)
     const [activeSubTab, setActiveSubTab] = useState<string | null>(null)
-    const [activeBookingTab, setActiveBookingTab] = useState<string | null>(null)
+    const [activeFieldBookingTab, setActiveFieldBookingTab] = useState<string | null>(null)
+    const [activeFieldCoachBookingTab, setActiveFieldCoachBookingTab] = useState<string | null>(null)
     const [activeFieldsTab, setActiveFieldsTab] = useState<string | null>(null)
 
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -171,10 +174,15 @@ export function FieldOwnerSidebar() {
         setIsCreateFieldSubmenuOpen(isFieldCreatePage)
     }, [isFieldCreatePage])
 
-    // Auto-open submenu when on booking-history page
+    // Auto-open submenu when on field-booking page
     useEffect(() => {
-        setIsBookingHistorySubmenuOpen(isBookingHistoryPage)
-    }, [isBookingHistoryPage])
+        setIsFieldBookingSubmenuOpen(isFieldBookingPage)
+    }, [isFieldBookingPage])
+
+    // Auto-open submenu when on field-coach-booking page
+    useEffect(() => {
+        setIsFieldCoachBookingSubmenuOpen(isFieldCoachBookingPage)
+    }, [isFieldCoachBookingPage])
 
     // Auto-open submenu when on fields page
     useEffect(() => {
@@ -205,8 +213,14 @@ export function FieldOwnerSidebar() {
         }
     }
 
-    const handleBookingHistoryTabClick = (tabId: string) => {
-        setActiveBookingTab(tabId)
+    const handleFieldBookingTabClick = (tabId: string) => {
+        setActiveFieldBookingTab(tabId)
+        // Dispatch custom event to notify the page about tab change
+        window.dispatchEvent(new CustomEvent('booking-history-tab-change', { detail: { tab: tabId } }))
+    }
+
+    const handleFieldCoachBookingTabClick = (tabId: string) => {
+        setActiveFieldCoachBookingTab(tabId)
         // Dispatch custom event to notify the page about tab change
         window.dispatchEvent(new CustomEvent('booking-history-tab-change', { detail: { tab: tabId } }))
     }
@@ -223,15 +237,27 @@ export function FieldOwnerSidebar() {
         }
     }
 
-    const handleBookingHistoryClick = (e: React.MouseEvent) => {
+    const handleFieldBookingClick = (e: React.MouseEvent) => {
         e.preventDefault()
-        if (isBookingHistoryPage) {
+        if (isFieldBookingPage) {
             // If already on the page, just toggle submenu
-            setIsBookingHistorySubmenuOpen(!isBookingHistorySubmenuOpen)
+            setIsFieldBookingSubmenuOpen(!isFieldBookingSubmenuOpen)
         } else {
             // If not on the page, navigate and open submenu
-            setIsBookingHistorySubmenuOpen(true)
-            navigate("/field-owner/booking-history")
+            setIsFieldBookingSubmenuOpen(true)
+            navigate("/field-owner/field-bookings")
+        }
+    }
+
+    const handleFieldCoachBookingClick = (e: React.MouseEvent) => {
+        e.preventDefault()
+        if (isFieldCoachBookingPage) {
+            // If already on the page, just toggle submenu
+            setIsFieldCoachBookingSubmenuOpen(!isFieldCoachBookingSubmenuOpen)
+        } else {
+            // If not on the page, navigate and open submenu
+            setIsFieldCoachBookingSubmenuOpen(true)
+            navigate("/field-owner/field-coach-bookings")
         }
     }
 
@@ -307,7 +333,8 @@ export function FieldOwnerSidebar() {
                                 {menuItems.map((item) => {
                                     const Icon = item.icon
                                     const isCreateField = item.url === "/field/create"
-                                    const isBookingHistory = item.url === "/field-owner/booking-history"
+                                    const isFieldBooking = item.url === "/field-owner/field-bookings"
+                                    const isFieldCoachBooking = item.url === "/field-owner/field-coach-bookings"
                                     const isFields = item.url === "/field-owner/fields"
                                     return (
                                         <SidebarMenuItem key={item.url}>
@@ -326,11 +353,11 @@ export function FieldOwnerSidebar() {
                                                         </span>
                                                     )}
                                                 </SidebarMenuButton>
-                                            ) : isBookingHistory ? (
+                                            ) : isFieldBooking ? (
                                                 <SidebarMenuButton
                                                     isActive={isActive(item.url)}
                                                     tooltip={item.title}
-                                                    onClick={handleBookingHistoryClick}
+                                                    onClick={handleFieldBookingClick}
                                                     className={isActive(item.url) ? "bg-primary text-white hover:bg-primary/90 hover:text-white data-[active=true]:bg-primary data-[active=true]:text-white" : ""}
                                                 >
                                                     <Icon />
@@ -341,7 +368,22 @@ export function FieldOwnerSidebar() {
                                                         </span>
                                                     )}
                                                 </SidebarMenuButton>
-                                            ) : isFields ? (
+                                            ) : isFieldCoachBooking ? (
+                                                <SidebarMenuButton
+                                                    isActive={isActive(item.url)}
+                                                    tooltip={item.title}
+                                                    onClick={handleFieldCoachBookingClick}
+                                                    className={isActive(item.url) ? "bg-primary text-white hover:bg-primary/90 hover:text-white data-[active=true]:bg-primary data-[active=true]:text-white" : ""}
+                                                >
+                                                    <Icon />
+                                                    <span>{item.title}</span>
+                                                    {item.badge && (
+                                                        <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground text-xs">
+                                                            {item.badge}
+                                                        </span>
+                                                    )}
+                                                </SidebarMenuButton>
+                                             ) : isFields ? (
                                                 <SidebarMenuButton
                                                     isActive={isActive(item.url)}
                                                     tooltip={item.title}
@@ -389,14 +431,29 @@ export function FieldOwnerSidebar() {
                                                     ))}
                                                 </SidebarMenuSub>
                                             )}
-                                            {isBookingHistory && isBookingHistorySubmenuOpen && (
+                                            {isFieldBooking && isFieldBookingSubmenuOpen && (
                                                 <SidebarMenuSub>
                                                     {bookingHistoryTabs.map((tab) => (
                                                         <SidebarMenuSubItem key={tab.id}>
                                                             <SidebarMenuSubButton
-                                                                onClick={() => handleBookingHistoryTabClick(tab.id)}
-                                                                isActive={activeBookingTab === tab.id}
-                                                                className={activeBookingTab === tab.id ? "bg-primary text-white hover:bg-primary/90 hover:text-white data-[active=true]:bg-primary data-[active=true]:text-white" : ""}
+                                                                onClick={() => handleFieldBookingTabClick(tab.id)}
+                                                                isActive={activeFieldBookingTab === tab.id}
+                                                                className={activeFieldBookingTab === tab.id ? "bg-primary text-white hover:bg-primary/90 hover:text-white data-[active=true]:bg-primary data-[active=true]:text-white" : ""}
+                                                            >
+                                                                <span>{tab.label}</span>
+                                                            </SidebarMenuSubButton>
+                                                        </SidebarMenuSubItem>
+                                                    ))}
+                                                </SidebarMenuSub>
+                                            )}
+                                            {isFieldCoachBooking && isFieldCoachBookingSubmenuOpen && (
+                                                <SidebarMenuSub>
+                                                    {bookingHistoryTabs.map((tab) => (
+                                                        <SidebarMenuSubItem key={tab.id}>
+                                                            <SidebarMenuSubButton
+                                                                onClick={() => handleFieldCoachBookingTabClick(tab.id)}
+                                                                isActive={activeFieldCoachBookingTab === tab.id}
+                                                                className={activeFieldCoachBookingTab === tab.id ? "bg-primary text-white hover:bg-primary/90 hover:text-white data-[active=true]:bg-primary data-[active=true]:text-white" : ""}
                                                             >
                                                                 <span>{tab.label}</span>
                                                             </SidebarMenuSubButton>

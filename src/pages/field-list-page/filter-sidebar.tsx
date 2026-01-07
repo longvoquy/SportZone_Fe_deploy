@@ -104,7 +104,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
     return (
         <Sheet open={isOpen} onOpenChange={onOpenChange}>
-            <SheetContent side={side} className="w-[400px] sm:w-[450px] p-0 overflow-y-auto">
+            <SheetContent side={side} className="w-full sm:w-[450px] p-0 overflow-y-auto">
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 z-10 px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -201,8 +201,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                                             type="button"
                                             onClick={() => onPriceRangeChange(minPrice, value)}
                                             className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${(maxPrice ?? 1000000) === value
-                                                    ? "bg-green-600 text-white border-green-600"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                ? "bg-green-600 text-white border-green-600"
+                                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                                                 }`}
                                         >
                                             {label}

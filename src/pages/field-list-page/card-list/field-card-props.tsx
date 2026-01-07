@@ -118,13 +118,13 @@ const FieldCard: React.FC<FieldCardProps> = ({
     const formattedHours = formatOperatingHours(operatingHours);
     return (
         <Card className="w-full overflow-hidden shadow-lg rounded-lg hover:shadow-xl transition-shadow">
-            <div className="flex">
+            <div className="flex flex-col sm:flex-row">
                 {/* Image section */}
-                <div className="relative w-32 h-40 flex-shrink-0 rounded-lg overflow-hidden">
+                <div className="relative w-full h-48 sm:w-32 sm:h-40 flex-shrink-0 sm:rounded-l-lg sm:rounded-tr-none overflow-hidden">
                     <img
                         src={imageUrl}
                         alt={`${name} field`}
-                        className="w-full h-full object-cover rounded-lg"
+                        className="w-full h-full object-cover"
                         onError={(e) => {
                             // Fallback image nếu không load được
                             (e.target as HTMLImageElement).src = "/images/1.1.png";
@@ -146,11 +146,11 @@ const FieldCard: React.FC<FieldCardProps> = ({
                 </div>
 
                 {/* Content section */}
-                <CardContent className="px-4 py-2 flex-1 flex text-start">
+                <CardContent className="p-4 flex-1 flex flex-col sm:flex-row text-start gap-4">
                     {/* Left Column: All Information */}
-                    <div className="flex-1 pr-4 min-w-0">
+                    <div className="flex-1 min-w-0">
                         <div className="mb-2">
-                            <h3 className="text-xl font-bold mb-1">{name}</h3>
+                            <h3 className="text-xl font-bold mb-1 break-words">{name}</h3>
                             <p className="text-gray-600 text-sm mb-1 flex items-start gap-1 break-words">
                                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-400" />
                                 {location}
@@ -181,15 +181,15 @@ const FieldCard: React.FC<FieldCardProps> = ({
                     </div>
 
                     {/* Right Column: Price and Action Button */}
-                    <div className="flex flex-col justify-between items-end flex-shrink-0 min-w-[120px]">
-                        <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap mb-4">
+                    <div className="flex sm:flex-col justify-between items-center sm:items-end flex-shrink-0 min-w-[120px] gap-2">
+                        <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap">
                             {price}
                         </div>
 
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 w-full sm:w-auto">
                             <Button
                                 onClick={handleBooking}
-                                className="bg-green-600 text-white hover:bg-green-700 w-28 text-sm px-4"
+                                className="bg-green-600 text-white hover:bg-green-700 w-full sm:w-28 text-sm px-4"
                             >
                                 Đặt ngay
                             </Button>

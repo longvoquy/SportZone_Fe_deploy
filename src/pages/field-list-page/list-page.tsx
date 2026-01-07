@@ -11,14 +11,13 @@ import { useAppDispatch, useAppSelector } from "../../store/hook"
 import { getAllFields } from "../../features/field/fieldThunk"
 import { useGeolocation } from "../../hooks/useGeolocation"
 import { locationAPIService } from "../../utils/geolocation"
-import { Navigation, AlertCircle, Filter, Heart, DollarSign, Plus, Minus, Search, MapPin, Trophy } from "lucide-react"
+import { Navigation, AlertCircle, Filter, DollarSign, Plus, Minus, Search, MapPin, Trophy } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { PageWrapper } from "@/components/layouts/page-wrapper"
 import { FilterSidebar } from "./filter-sidebar"
-import { getUserProfile } from "@/features/user/userThunk";
 import { getFieldPinIconWithLabel } from "@/utils/fieldPinIcon";
 import { VIETNAM_CITIES, SPORT_TYPE_OPTIONS, PRICE_SORT_OPTIONS } from "@/utils/constant-value/constant";
 
@@ -28,7 +27,6 @@ const FieldBookingPage = () => {
   const { fields, loading, error, pagination } = useAppSelector(
     (state) => state.field
   );
-  const authUser = useAppSelector((state) => state.auth.user);
 
   const [filters, setFilters] = useState({
     location: "",
@@ -72,8 +70,6 @@ const FieldBookingPage = () => {
   const markersMapRef = useRef<Map<string, any>>(new Map());
   const fieldCardRefsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const [highlightedFieldId, setHighlightedFieldId] = useState<string | null>(null);
-  const user = useAppSelector((state) => state.auth.user);
-  const isLoggedIn = !!user;
 
   const handleResetAllFilters = () => {
     setNameFilter("");
@@ -849,19 +845,25 @@ const FieldBookingPage = () => {
                     overflow-y: auto;
                 }
                 .map-container {
-                    position: sticky;
-                    top: 80px;
-                    height: calc(100vh);
+                    position: relative;
+                    height: 40vh;
                     overflow: hidden;
                     z-index: 10;
+                }
+                @media (min-width: 1024px) {
+                    .map-container {
+                        position: sticky;
+                        top: 80px;
+                        height: calc(100vh);
+                    }
                 }
             `}</style>
       <NavbarDarkComponent />
       <PageWrapper>
-        <div className="flex flex-row">
-          <div className="flex-4">
+        <div className="flex flex-col-reverse lg:flex-row">
+          <div className="w-full lg:w-[45%] xl:w-[40%]">
             <div className="items-start">
-              <div className="bg-background-secondary flex flex-col h-screen p-4">
+              <div className="bg-background-secondary flex flex-col min-h-[50vh] lg:h-screen p-4">
                 <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 flex flex-col gap-4">
@@ -873,7 +875,7 @@ const FieldBookingPage = () => {
                             value={locationFilter || "all"}
                             onValueChange={(value) => setLocationFilter(value === "all" ? "" : value)}
                           >
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[180px]">
                               <SelectValue placeholder="Địa điểm" />
                             </SelectTrigger>
                             <SelectContent className="max-h-[300px] overflow-y-auto">
@@ -893,7 +895,7 @@ const FieldBookingPage = () => {
                             value={sportFilter}
                             onValueChange={setSportFilter}
                           >
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[180px]">
                               <SelectValue placeholder="Loại thể thao" />
                             </SelectTrigger>
                             <SelectContent className="max-h-[300px] overflow-y-auto">
@@ -914,7 +916,7 @@ const FieldBookingPage = () => {
                               setPriceSort(value === "none" ? "" : value)
                             }
                           >
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[180px]">
                               <SelectValue placeholder="Sắp xếp giá" />
                             </SelectTrigger>
                             <SelectContent className="max-h-[300px] overflow-y-auto">
@@ -1156,9 +1158,9 @@ const FieldBookingPage = () => {
               </div>
             </div>
           </div>
-          <div className="flex-6 relative">
+          <div className="w-full lg:w-[55%] xl:w-[60%] relative">
             <div id={mapContainerId} className="map-container w-full h-screen" />
-            <div className="absolute top-24 right-4 z-1000 flex flex-col items-center gap-2">
+            <div className="absolute top-24 right-4 z-40 flex flex-col items-center gap-2">
               {/* Zoom In Button - Circular */}
               <button
                 onClick={() => {
